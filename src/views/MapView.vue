@@ -10,31 +10,30 @@ import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import 'leaflet.markercluster/dist/leaflet.markercluster.js'
 
-
 L.Control.Layers.include({
-  getOverlays: function() {
+  getOverlays: function () {
     // create hash to hold all layers
-    let control, layers;
-    layers = {};
-    control = this;
+    let control, layers
+    layers = {}
+    control = this
 
     // loop thru all layers in control
-    control._layers.forEach(function(obj) {
-      let layerName;
+    control._layers.forEach(function (obj) {
+      let layerName
 
       // check if layer is an overlay
       if (obj.overlay) {
         // get name of overlay
-        layerName = obj.name;
+        layerName = obj.name
         // store whether it's present on the map or not
-        return layers[layerName] = control._map.hasLayer(obj.layer);
+        return (layers[layerName] = control._map.hasLayer(obj.layer))
       }
-    });
+    })
 
-    return layers;
-  }
-});
-
+    return layers
+  },
+})
+/*
 // Animate the class "playerPos" rotating
 setInterval(() => {
   const element = document.getElementsByClassName('playerPosition')[0]
@@ -52,7 +51,7 @@ setInterval(() => {
   }
 
 }, 100);
-
+*/
 
 function layerAdd(layer, levelMarkers, layerControls, performSearch) {
   // Get currently active layers
@@ -92,7 +91,7 @@ onMounted(() => {
     [1024, 1024],
   ]
 
-  let searchMarkers : L.Marker[] = [];
+  let searchMarkers: L.Marker[] = []
 
   const levelMarkers = {
     Overworld: {},
@@ -155,29 +154,30 @@ onMounted(() => {
   locations.locations.forEach((location) => {
     // Text Marker
     const marker = new L.Marker([location.y + 512.5, location.x + 512.5], {
-
       icon: L.divIcon({
         className: 'text-label',
         html: `<div style="font-size:1rem;color:white;text-shadow: 0px 0px 8px black;color:white;white-space:nowrap;position:absolute;left:50%;top:50%;transform:translate(-50%, -50%);">${location.name}</div>`,
       }),
       title: location.name,
     })
-    switch(location.labelType) {
+    switch (location.labelType) {
       case 0:
         addItem(marker, 'Underworld', 'Locations')
-        break;
+        break
       case 1:
         addItem(marker, 'Overworld', 'Locations')
-        break;
+        break
       case 2:
         addItem(marker, 'Sky', 'Locations')
-        break;
+        break
     }
   })
   const treeClusters = {}
   entities.worldEntities.forEach((entity) => {
-
-    if ((entity.type.includes('tree') || entity.type.includes('cherryblossom')) && entity.type != 'treestump') {
+    if (
+      (entity.type.includes('tree') || entity.type.includes('cherryblossom')) &&
+      entity.type != 'treestump'
+    ) {
       let name = entity.type.replace('tree', ' Tree')
       name = name.replace('blossom', ' Blossom')
       const nameWithSpaces = name.replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -877,7 +877,7 @@ onMounted(() => {
 
   // Add the tree clusters to the map
   for (let i = 0; i < 3; i++) {
-    switch(i) {
+    switch (i) {
       case 0:
         for (const type in treeClusters[0]) {
           addItem(treeClusters[0][type], 'Underworld', 'Trees')
@@ -898,9 +898,7 @@ onMounted(() => {
 
   npcs.npcs.forEach((npc) => {
     // Find the item in the npcDefinitions.npcDefs JSON array where npc._id == npcDef._id
-    const npcDef = npcDefinitions.npcDefs.find(
-      (npcDef) => npc.npcdef_id === npcDef._id
-    )
+    const npcDef = npcDefinitions.npcDefs.find((npcDef) => npc.npcdef_id === npcDef._id)
 
     // Check if NPC has a value for "shopdef_id"
     if (npc.shopdef_id) {
@@ -933,12 +931,16 @@ onMounted(() => {
           addItem(marker, 'Sky', 'Shops')
           break
       }
-      return;
+      return
     }
 
     if (npc.isAlwaysAggroOverride) {
       // Capitalize characters after spaces
-      const name = npcDef.name.replace(/(?:^|\s)\S/g, (a) => a.toUpperCase()) + " (Lvl. " + npcDef.combat.level + ")";
+      const name =
+        npcDef.name.replace(/(?:^|\s)\S/g, (a) => a.toUpperCase()) +
+        ' (Lvl. ' +
+        npcDef.combat.level +
+        ')'
       const marker = L.marker([npc.y + 512.5, npc.x + 512.5], {
         // Icon for Aggro NPC is Devil: 😈
         icon: L.divIcon({
@@ -966,7 +968,7 @@ onMounted(() => {
           addItem(marker, 'Sky', 'Aggro NPCs')
           break
       }
-      return;
+      return
     }
 
     // Check if npcDef has a definition for "combat"
@@ -1038,7 +1040,11 @@ onMounted(() => {
     if (npcDef.combat) {
       // Add Attackable NPC
       // Capitalize characters after spaces
-      const name = npcDef.name.replace(/(?:^|\s)\S/g, (a) => a.toUpperCase()) + " (Lvl. " + npcDef.combat.level + ")";
+      const name =
+        npcDef.name.replace(/(?:^|\s)\S/g, (a) => a.toUpperCase()) +
+        ' (Lvl. ' +
+        npcDef.combat.level +
+        ')'
       const marker = L.marker([npc.y + 512.5, npc.x + 512.5], {
         // Icon for NPC is Unicode: ⚔️
         icon: L.divIcon({
@@ -1065,12 +1071,11 @@ onMounted(() => {
           addItem(marker, 'Sky', 'Attackable NPCs')
           break
       }
-      return;
+      return
     }
   })
 
-  const layerControls =
-  L.control.layers(baseMaps, {}, { collapsed: true }).addTo(map)
+  const layerControls = L.control.layers(baseMaps, {}, { collapsed: true }).addTo(map)
 
   // Add Search Functionality via DOM
   const searchInput = document.createElement('input')
@@ -1078,7 +1083,7 @@ onMounted(() => {
   searchInput.placeholder = 'Search...'
   searchInput.style.position = 'absolute'
   searchInput.style.top = '10px'
-  searchInput.style.left = '50%';
+  searchInput.style.left = '50%'
   searchInput.style.transform = 'translateX(-50%)'
   searchInput.style.zIndex = '1000'
   searchInput.style.padding = '5px'
@@ -1112,7 +1117,7 @@ onMounted(() => {
     for (const marker in searchMarkers) {
       map.removeLayer(searchMarkers[marker])
     }
-    searchMarkers = [];
+    searchMarkers = []
 
     if (!searchTerm || searchTerm.trim() === '') {
       return
@@ -1137,29 +1142,27 @@ onMounted(() => {
                 const markerTitle = layer.options.title || ''
                 if (markerTitle.toLowerCase().includes(searchTerm)) {
                   layer.addTo(map)
-                  const layerMarker = layer._icon.children[0];
+                  const layerMarker = layer._icon.children[0]
 
                   // Add yellow text shadow to the marker
-                  layerMarker.style.textShadow = '0px 0px 16px yellow';
+                  layerMarker.style.textShadow = '0px 0px 16px yellow'
                   // layerMarker.style.transform = 'translate(-0.70rem, -1rem)';
-                  layerMarker.style.transition = 'all 0.5s ease';
-                  layerMarker.style.fontSize = '1.25rem';
+                  layerMarker.style.transition = 'all 0.5s ease'
+                  layerMarker.style.fontSize = '1.25rem'
 
                   // Wait for 0.3s before removing the text shadow
                   setTimeout(() => {
-                    layerMarker.style.textShadow = '0px 0px 8px black';
-                    layerMarker.style.fontSize = '1rem';
-                    layerMarker.style.transform = 'translate(-0.35rem, -0.5rem)';
-                  }, 200);
+                    layerMarker.style.textShadow = '0px 0px 8px black'
+                    layerMarker.style.fontSize = '1rem'
+                    layerMarker.style.transform = 'translate(-0.35rem, -0.5rem)'
+                  }, 200)
 
-                  searchMarkers.push(layer);
+                  searchMarkers.push(layer)
 
-                 // map.setView(layer.getLatLng(), 2)
+                  // map.setView(layer.getLatLng(), 2)
                 } else {
                   map.removeLayer(layer)
-                  searchMarkers = searchMarkers.filter(
-                    (marker) => marker !== layer
-                  )
+                  searchMarkers = searchMarkers.filter((marker) => marker !== layer)
                 }
               }
             })
@@ -1180,27 +1183,25 @@ onMounted(() => {
                 const markerTitle = layer.options.title || ''
                 if (markerTitle.toLowerCase().includes(searchTerm)) {
                   layer.addTo(map)
-                  const layerMarker = layer._icon.children[0];
+                  const layerMarker = layer._icon.children[0]
 
                   // Add yellow text shadow to the marker
-                  layerMarker.style.textShadow = '0px 0px 16px yellow';
-                  layerMarker.style.transition = 'all 0.5s ease';
-                  layerMarker.style.fontSize = '1.25rem';
+                  layerMarker.style.textShadow = '0px 0px 16px yellow'
+                  layerMarker.style.transition = 'all 0.5s ease'
+                  layerMarker.style.fontSize = '1.25rem'
 
                   // Wait for 0.3s before removing the text shadow
                   setTimeout(() => {
-                    layerMarker.style.textShadow = '0px 0px 8px black';
-                    layerMarker.style.fontSize = '1rem';
-                  }, 200);
+                    layerMarker.style.textShadow = '0px 0px 8px black'
+                    layerMarker.style.fontSize = '1rem'
+                  }, 200)
 
-                  searchMarkers.push(layer);
+                  searchMarkers.push(layer)
 
-                 // map.setView(layer.getLatLng(), 2)
+                  // map.setView(layer.getLatLng(), 2)
                 } else {
                   map.removeLayer(layer)
-                  searchMarkers = searchMarkers.filter(
-                    (marker) => marker !== layer
-                  )
+                  searchMarkers = searchMarkers.filter((marker) => marker !== layer)
                 }
               }
             })
@@ -1252,27 +1253,30 @@ onMounted(() => {
       }),
       title: 'You are here',
     })
-    playPositionMarker.bindPopup('You are here');
+    playPositionMarker.bindPopup('You are here')
 
     playPositionMarker.addTo(map)
   }
 
   window.addEventListener('message', (event) => {
-        // Check if the message is a command to set the map position
-        if (event.data.X && event.data.Y && event.data.lvl) {
-          // Change map layer based on the level
-          switch (event.data.lvl) {
-            case 'Overworld':
-              map.addLayer(overworldLayers)
-              break
-            case 'Underworld':
-              map.addLayer(underworldLayers)
-              break
-            case 'Sky':
-              map.addLayer(skyLayers)
-              break
-          }
+    // Check if the message is a command to set the map position
+    if (event.data.X && event.data.Y && event.data.lvl) {
+      // Change map layer based on the level
+      switch (event.data.lvl) {
+        case 'Overworld':
+          map.addLayer(overworldLayers)
+          break
+        case 'Underworld':
+          map.addLayer(underworldLayers)
+          break
+        case 'Sky':
+          map.addLayer(skyLayers)
+          break
+      }
 
+      animateMarker(playPositionMarker, {lat: event.data.Y, lng: event.data.X});
+
+      /*
           // Remove the previous player position marker if it exists
           if (playPositionMarker) {
             map.removeLayer(playPositionMarker);
@@ -1291,30 +1295,30 @@ onMounted(() => {
           })
           playPositionMarker.bindPopup('You are here');
           playPositionMarker.addTo(map);
+          */
     }
-  });
+  })
 
   if (hideDecor) {
     // Hide class footer and tag header
-    const footer = document.querySelector('.footer');
-    const header = document.querySelector('header');
-    const joinUs = document.querySelector('.joinUs');
+    const footer = document.querySelector('.footer')
+    const header = document.querySelector('header')
+    const joinUs = document.querySelector('.joinUs')
     if (footer) {
-      footer.style.display = 'none';
+      footer.style.display = 'none'
     }
     if (header) {
-      header.style.display = 'none';
+      header.style.display = 'none'
     }
     if (joinUs) {
-      joinUs.style.display = 'none';
+      joinUs.style.display = 'none'
     }
 
     // Update map height to fill the screen
-    const main = document.querySelector('main');
+    const main = document.querySelector('main')
     if (main) {
-      main.style.height = '100vh';
+      main.style.height = '100vh'
     }
-
   }
 
   // Change layer based on URL parameter
@@ -1335,6 +1339,27 @@ onMounted(() => {
     map.addLayer(overworldLayers)
   }
 })
+
+function animateMarker(marker, toLatLng, duration = 1000) {
+  const fromLatLng = marker.getLatLng()
+  const startTime = performance.now()
+
+  function animate(time) {
+    const elapsed = time - startTime
+    const t = Math.min(elapsed / duration, 1)
+
+    const lat = fromLatLng.lat + (toLatLng.lat - fromLatLng.lat) * t
+    const lng = fromLatLng.lng + (toLatLng.lng - fromLatLng.lng) * t
+
+    marker.setLatLng([lat, lng])
+
+    if (t < 1) {
+      requestAnimationFrame(animate)
+    }
+  }
+
+  requestAnimationFrame(animate)
+}
 </script>
 
 <template>
@@ -1380,5 +1405,4 @@ button:hover {
 button:active {
   background-color: #373737;
 }
-
 </style>
