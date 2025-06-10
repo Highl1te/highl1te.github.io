@@ -109,9 +109,9 @@ onMounted(() => {
         <p>An open-source RuneLite-esque standalone client for High Spell</p>
         <div><button id="contribute"><font-awesome-icon :icon="faGithub" /> Contribute </button> <button id="download">Download</button></div>
         <div id="aboutStats">
-          <span>Latest Release: v1.0.0</span>
+          <span>Latest Release: -</span>
           <span> | </span>
-          <span>Downloads: 1000</span>
+          <span>Downloads: -</span>
         </div>
       </div>
   </div>

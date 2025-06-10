@@ -33,25 +33,6 @@ L.Control.Layers.include({
     return layers
   },
 })
-/*
-// Animate the class "playerPos" rotating
-setInterval(() => {
-  const element = document.getElementsByClassName('playerPosition')[0]
-  if (!element) return
-  element.style.zIndex = '9999'
-  element.style.transition = 'rotate 0.1s linear'
-  // Get elements current rotation
-  const currentRotation = (parseInt(element.style.rotate.replace('deg', ''))) || 0
-  if (currentRotation >= 360) {
-    element.style.transition = 'rotate 0.0s linear'
-    element.style.rotate = '0deg'
-  } else {
-    // Set the new rotation
-    element.style.rotate = `${currentRotation + 5}deg`
-  }
-
-}, 100);
-*/
 
 function layerAdd(layer, levelMarkers, layerControls, performSearch) {
   // Get currently active layers
@@ -1090,7 +1071,8 @@ onMounted(() => {
   searchInput.style.backgroundColor = '#0d0d0d'
   searchInput.style.border = '1px solid black'
   searchInput.style.borderRadius = '5px'
-  searchInput.style.width = '350px'
+  searchInput.style.width = '60%'
+  searchInput.style.maxWidth = '350px'
   searchInput.style.boxShadow = '0px 0px 5px black'
   searchInput.style.fontSize = '1rem'
   searchInput.style.color = 'white'
