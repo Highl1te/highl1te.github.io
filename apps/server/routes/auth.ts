@@ -32,15 +32,17 @@ router.get('/discord', (req: Request, res: Response): void => {
 // Discord OAuth callback
 router.get('/discord/callback', (req: Request, res: Response, _next: NextFunction): void => {
   if (!isDiscordConfigured()) {
-    res.redirect(`${process.env.FRONTEND_URL}/login?error=not_configured`);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/login?error=not_configured`);
     return;
   }
   
   passport.authenticate('discord', { 
-    failureRedirect: `${process.env.FRONTEND_URL}/login?error=auth_failed` 
+    failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login?error=auth_failed` 
   })(req, res, () => {
     // User is now authenticated via session
-    res.redirect(`${process.env.FRONTEND_URL}/auth/callback?success=true`);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.redirect(`${frontendUrl}/auth/callback?success=true`);
   });
 });
 
@@ -59,7 +61,11 @@ router.get('/me', (req: Request, res: Response): void => {
       discord_id: user.discord_id,
       username: user.username,
       discriminator: user.discriminator,
-      avatar: user.avatar
+      avatar: user.avatar,
+      role: user.role,
+      banned: user.banned,
+      banned_until: user.banned_until,
+      ban_reason: user.ban_reason
     }
   });
 });

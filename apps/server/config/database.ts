@@ -167,6 +167,84 @@ export async function initializeDatabase(): Promise<Database> {
     }
   }
 
+  // Add user roles and admin functionality
+  try {
+    await db.exec(`
+      ALTER TABLE users 
+      ADD COLUMN role TEXT DEFAULT 'user' CHECK(role IN ('user', 'moderator', 'admin'))
+    `);
+  } catch (error: any) {
+    // Column likely already exists, ignore error
+    if (!error.message?.includes('duplicate column name')) {
+      console.warn('Warning: Failed to add role column:', error.message);
+    }
+  }
+
+  try {
+    await db.exec(`
+      ALTER TABLE users 
+      ADD COLUMN is_banned BOOLEAN DEFAULT 0
+    `);
+  } catch (error: any) {
+    // Column likely already exists, ignore error
+    if (!error.message?.includes('duplicate column name')) {
+      console.warn('Warning: Failed to add is_banned column:', error.message);
+    }
+  }
+
+  try {
+    await db.exec(`
+      ALTER TABLE users 
+      ADD COLUMN banned_until DATETIME NULL
+    `);
+  } catch (error: any) {
+    // Column likely already exists, ignore error
+    if (!error.message?.includes('duplicate column name')) {
+      console.warn('Warning: Failed to add banned_until column:', error.message);
+    }
+  }
+
+  try {
+    await db.exec(`
+      ALTER TABLE users 
+      ADD COLUMN ban_reason TEXT NULL
+    `);
+  } catch (error: any) {
+    // Column likely already exists, ignore error
+    if (!error.message?.includes('duplicate column name')) {
+      console.warn('Warning: Failed to add ban_reason column:', error.message);
+    }
+  }
+
+  // Create admin actions log table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS admin_actions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      admin_id INTEGER NOT NULL,
+      action_type TEXT NOT NULL,
+      target_type TEXT NOT NULL,
+      target_id TEXT NOT NULL,
+      details TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (admin_id) REFERENCES users (id)
+    )
+  `);
+
+  // Create user warnings table
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS user_warnings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      admin_id INTEGER NOT NULL,
+      warning_type TEXT NOT NULL,
+      message TEXT NOT NULL,
+      is_active BOOLEAN DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id),
+      FOREIGN KEY (admin_id) REFERENCES users (id)
+    )
+  `);
+
   return db;
 }
 

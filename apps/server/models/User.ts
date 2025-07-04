@@ -21,6 +21,10 @@ export interface User {
   discriminator?: string;
   avatar?: string;
   email?: string;
+  role?: 'user' | 'moderator' | 'admin';
+  is_banned?: boolean;
+  banned_until?: string;
+  ban_reason?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -95,6 +99,22 @@ export class UserModel {
     if (userData.email !== undefined) {
       updateFields.push('email = ?');
       updateValues.push(userData.email);
+    }
+    if (userData.role !== undefined) {
+      updateFields.push('role = ?');
+      updateValues.push(userData.role);
+    }
+    if (userData.is_banned !== undefined) {
+      updateFields.push('is_banned = ?');
+      updateValues.push(userData.is_banned ? 1 : 0);
+    }
+    if (userData.banned_until !== undefined) {
+      updateFields.push('banned_until = ?');
+      updateValues.push(userData.banned_until);
+    }
+    if (userData.ban_reason !== undefined) {
+      updateFields.push('ban_reason = ?');
+      updateValues.push(userData.ban_reason);
     }
 
     if (updateFields.length === 0) {

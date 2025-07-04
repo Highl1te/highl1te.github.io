@@ -45,6 +45,13 @@ export const configurePassport = () => {
           });
         }
 
+        // Auto-promote admin user based on Discord ID
+        const adminDiscordId = process.env.ADMIN_DISCORD_ID;
+        
+        if (adminDiscordId && profile.id === adminDiscordId && user!.role !== 'admin') {
+          user = await UserModel.update(user!.id!, { role: 'admin' });
+        }
+
         return done(null, user!);
       } catch (error) {
         return done(error, false);

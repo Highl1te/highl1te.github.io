@@ -7,6 +7,48 @@ import itemDefs from '../data/itemdefs.json' with { type: 'json' };
 
 const router = express.Router();
 
+// Middleware to check if user is banned
+const checkUserBanned = async (req: Request, res: Response, next: Function) => {
+  try {
+    const userId = (req.user as any)?.id;
+    if (!userId) {
+      return next(); // Let requireAuth handle this
+    }
+
+    const db = await getDatabase();
+    const user = await db.get(`
+      SELECT is_banned, banned_until, ban_reason 
+      FROM users 
+      WHERE id = ?
+    `, [userId]);
+    
+    if (user && user.is_banned) {
+      // Check if temporary ban has expired
+      if (user.banned_until && new Date(user.banned_until) < new Date()) {
+        // Unban user automatically
+        await db.run(`
+          UPDATE users 
+          SET is_banned = 0, banned_until = NULL, ban_reason = NULL
+          WHERE id = ?
+        `, [userId]);
+        return next();
+      }
+      
+      // User is still banned
+      return res.status(403).json({ 
+        error: 'Account banned from marketplace',
+        reason: user.ban_reason,
+        banned_until: user.banned_until
+      });
+    }
+    
+    next();
+  } catch (error) {
+    console.error('Error checking ban status:', error);
+    next(); // Continue on error to not break the flow
+  }
+};
+
 // Helper function to get item name by ID
 function getItemName(itemId: number): string {
   const item = (itemDefs as any[]).find((item: any) => item._id === itemId);
@@ -40,7 +82,7 @@ router.get('/listings', async (_req: Request, res: Response) => {
 });
 
 // Create a new listing
-router.post('/listings', requireAuth, async (req: Request, res: Response): Promise<void> => {
+router.post('/listings', requireAuth, checkUserBanned, async (req: Request, res: Response): Promise<void> => {
   try {
     const { itemId, quantity, askingPrice, acceptsItems, acceptsPartialOffers, listingType, notes } = req.body;
     const userId = (req.user as any)!.id!;
@@ -352,7 +394,7 @@ router.get('/listings/:id/offers/manage', requireAuth, async (req: Request, res:
 });
 
 // Create an offer on a listing
-router.post('/listings/:id/offers', requireAuth, async (req: Request, res: Response): Promise<void> => {
+router.post('/listings/:id/offers', requireAuth, checkUserBanned, async (req: Request, res: Response): Promise<void> => {
   try {
     const listingId = req.params.id;
     const userId = (req.user as any)!.id!;

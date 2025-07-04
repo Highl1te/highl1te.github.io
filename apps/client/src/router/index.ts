@@ -5,6 +5,7 @@ import MapView from '@/views/MapView.vue'
 import MarketplaceView from '@/views/MarketplaceView.vue'
 import LoginView from '@/views/LoginView.vue'
 import AuthCallbackView from '@/views/AuthCallbackView.vue'
+import AdminView from '@/views/AdminView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -35,6 +36,12 @@ const router = createRouter({
       name: 'AuthCallback',
       component: AuthCallbackView,
     },
+    {
+      path: '/admin',
+      name: 'Admin',
+      component: AdminView,
+      meta: { requiresAuth: true, requiresAdmin: true }
+    },
   ],
 })
 
@@ -51,6 +58,12 @@ router.beforeEach(async (to, _from, next) => {
   // Check for protected routes (add meta: { requiresAuth: true } to routes that need authentication)
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next('/login')
+    return
+  }
+  
+  // Check for admin routes
+  if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    next('/')
     return
   }
   

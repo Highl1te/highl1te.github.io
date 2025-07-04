@@ -2,6 +2,9 @@
 import { Icon } from '@iconify/vue'
 import { RouterLink, RouterView } from 'vue-router'
 import UserMenu from '@/components/UserMenu.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 </script>
 
 <template>
@@ -13,6 +16,13 @@ import UserMenu from '@/components/UserMenu.vue'
       <RouterLink to="/" class="navItem">Home</RouterLink>
       <RouterLink to="/map" class="navItem">Map</RouterLink>
       <RouterLink to="/marketplace" class="navItem">Marketplace</RouterLink>
+      <RouterLink 
+        v-if="authStore.isAdmin" 
+        to="/admin" 
+        class="navItem admin-link"
+      >
+        Admin
+      </RouterLink>
     </nav>
     <UserMenu />
   </header>
@@ -70,6 +80,24 @@ nav .navItem:hover {
 nav .router-link-active {
   background-color: var(--theme-accent);
   color: var(--theme-text-dark);
+}
+
+nav .admin-link {
+  background-color: var(--theme-accent-muted);
+  color: var(--theme-accent);
+  font-weight: 600;
+  border: 1px solid var(--theme-accent);
+}
+
+nav .admin-link:hover {
+  background-color: var(--theme-accent);
+  color: var(--theme-text-dark);
+}
+
+nav .admin-link.router-link-active {
+  background-color: var(--theme-accent);
+  color: var(--theme-text-dark);
+  box-shadow: 0 0 10px var(--theme-accent-muted);
 }
 
 #logo {

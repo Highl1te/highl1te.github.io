@@ -26,6 +26,7 @@ configurePassport();
 
 import authRoutes from './routes/auth.js';
 import marketplaceRoutes from './routes/marketplaceRoute.js';
+import adminRoutes from './routes/admin.js';
 
 // Middleware
 // Security headers
@@ -33,54 +34,37 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https://cdn.discordapp.com", "https://images.unsplash.com"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https://discord.com", "https://discordapp.com"],
-      fontSrc: ["'self'", "https:", "data:"],
-      objectSrc: ["'none'"],
+      connectSrc: ["'self'", "ws:", "wss:"],
       mediaSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      childSrc: ["'none'"],
+      workerSrc: ["'none'"],
       frameSrc: ["'none'"],
-    },
+      formAction: ["'self'"],
+      upgradeInsecureRequests: []
+    }
   },
   crossOriginEmbedderPolicy: false,
 }));
 
+// CORS Configuration
 app.use(cors({
-  origin: function (origin, callback) {
+  origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
-      process.env.FRONTEND_URL || 'http://localhost:5173',
-    ];
-
-    // In development, also allow localhost variants
-    if (process.env.NODE_ENV === 'development') {
-      allowedOrigins.push(
-        'http://localhost:5173',
-        'http://10.0.0.2:5173',
-        'http://127.0.0.1:5173'
-      );
-    }
-
-    // In production, also allow the production domain variants
-    if (process.env.NODE_ENV === 'production') {
-      allowedOrigins.push(
-        'https://www.highlite.dev',
-        process.env.CORS_ORIGIN || 'https://www.highlite.dev'
-      );
-    }
+      'http://localhost:5173',
+      'https://highlite.dev',
+      'https://www.highlite.dev',
+      process.env.FRONTEND_URL
+    ].filter(Boolean);
     
-    // Check if origin is allowed
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else if (process.env.NODE_ENV === 'development' && (
-        origin.match(/^http:\/\/10\.0\.0\.\d+:5173$/) ||
-        origin.match(/^http:\/\/192\.168\.\d+\.\d+:5173$/) ||
-        origin.match(/^http:\/\/172\.16\.\d+\.\d+:5173$/) ||
-        origin.match(/^http:\/\/localhost:\d+$/) ||
-        origin.match(/^http:\/\/127\.0\.0\.1:\d+$/))) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -120,6 +104,7 @@ app.use(passport.session());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/health', (_req, res) => {

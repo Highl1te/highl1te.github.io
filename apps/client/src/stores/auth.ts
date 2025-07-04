@@ -8,6 +8,10 @@ export interface User {
   username: string
   discriminator?: string
   avatar?: string
+  role?: 'user' | 'moderator' | 'admin'
+  is_banned?: boolean
+  banned_until?: string
+  ban_reason?: string
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
@@ -17,6 +21,7 @@ export const useAuthStore = defineStore('auth', () => {
   const loading = ref(false)
 
   const isAuthenticated = computed(() => !!user.value)
+  const isAdmin = computed(() => user.value?.role === 'admin' || user.value?.role === 'moderator')
   const avatarUrl = computed(() => {
     if (!user.value) return null
     if (!user.value.avatar) return null
@@ -95,6 +100,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     loading,
     isAuthenticated,
+    isAdmin,
     avatarUrl,
     clearAuth,
     checkAuthStatus,
