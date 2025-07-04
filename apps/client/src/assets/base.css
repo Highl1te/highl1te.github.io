@@ -84,6 +84,7 @@
   box-sizing: border-box;
   margin: 0;
   font-weight: normal;
+  font-family: inherit;
 }
 
 html {
@@ -116,6 +117,102 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+}
+
+/* Force Inter font on all form elements and UI components to override browser defaults */
+input, 
+button, 
+textarea, 
+select, 
+optgroup, 
+option,
+label {
+  font-family: 
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif !important;
+}
+
+/* Specific button styling to override all browser defaults */
+button {
+  font-family: 
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif !important;
+  font-weight: inherit;
+  font-size: inherit;
+}
+
+/* Ensure all headings use Inter */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif;
+}
+
+/* Ensure all interactive elements use Inter */
+a, 
+span, 
+div, 
+p {
+  font-family: inherit;
+}
+
+/* Comprehensive font override for all map interface elements */
+.map-container *,
+.control-panel *,
+.search-input *,
+.filter-tag *,
+.layer-btn *,
+.popup-content *,
+.position-indicator *,
+[class*="map-"],
+[class*="search-"],
+[class*="filter-"],
+[class*="layer-"],
+[class*="popup-"],
+[class*="control-"] {
+  font-family: 
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    'Fira Sans',
+    'Droid Sans',
+    'Helvetica Neue',
+    sans-serif !important;
 }
 
 /* Responsive design utilities */

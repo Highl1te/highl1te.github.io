@@ -153,8 +153,9 @@ const markerCategories = ref([
   { name: 'Harvestables', icon: '🌾', visible: true, count: 0 },
   { name: 'Shops', icon: '🏪', visible: true, count: 0 },
   { name: 'NPCs', icon: '👤', visible: true, count: 0 },
-  { name: 'Attackable NPCs', icon: '⚔️', visible: true, count: 0 },
-  { name: 'Aggro NPCs', icon: '😈', visible: true, count: 0 }
+  { name: 'Attackable NPCs', icon: '😐', visible: true, count: 0 },
+  { name: 'Semi-Aggressive NPCs', icon: '😠', visible: true, count: 0 },
+  { name: 'Aggressive NPCs', icon: '😈', visible: true, count: 0 }
 ])
 
 // All searchable items - moved to component
@@ -355,7 +356,7 @@ const updatePinnedFeatureVisuals = (mapX: number, mapY: number) => {
           const textStyle = enhancedStyle.getText()
           if (textStyle) {
             // Scale up the feature - get original font and increase size
-            const originalFont = textStyle.getFont() || 'bold 1rem Inter'
+            const originalFont = textStyle.getFont() || 'bold 1rem "Inter", sans-serif'
             const scaledFont = originalFont.replace(/(\d+(?:\.\d+)?)(\w+)/, (_match: string, size: string, unit: string) => {
               const newSize = parseFloat(size) * 1.8 // Scale up by 1.8x
               return `${newSize}${unit}`
@@ -388,7 +389,7 @@ const createClusterStyle = (feature: FeatureLike): Style | Style[] => {
     return originalFeature.get('defaultStyle') || new Style({
       text: new Text({
         text: '🌳',
-        font: 'bold 1.2rem "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Inter, sans-serif',
+        font: 'bold 1.2rem "Inter", "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif',
         fill: new Fill({ color: '#90ee90' }),
         stroke: new Stroke({ color: '#228b22', width: 1.5 }),
         textAlign: 'center',
@@ -403,7 +404,7 @@ const createClusterStyle = (feature: FeatureLike): Style | Style[] => {
       new Style({
         text: new Text({
           text: '🌳',
-          font: 'bold 1.5rem "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Inter, sans-serif',
+          font: 'bold 1.5rem "Inter", "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif',
           fill: new Fill({ color: '#228b22' }), // Darker green for clusters
           stroke: new Stroke({ color: '#ffffff', width: 2 }),
           textAlign: 'center',
@@ -423,7 +424,7 @@ const createClusterStyle = (feature: FeatureLike): Style | Style[] => {
       new Style({
         text: new Text({
           text: size.toString(),
-          font: 'bold 10px Inter, sans-serif',
+          font: 'bold 10px "Inter", sans-serif',
           fill: new Fill({ color: '#ffffff' }),
           textAlign: 'center',
           textBaseline: 'middle',
@@ -476,7 +477,7 @@ const reapplyPinnedFeatureStyle = () => {
         const textStyle = enhancedStyle.getText()
         if (textStyle) {
           // Scale up the feature - get original font and increase size
-          const originalFont = textStyle.getFont() || 'bold 1rem Inter'
+          const originalFont = textStyle.getFont() || 'bold 1rem "Inter", sans-serif'
           const scaledFont = originalFont.replace(/(\d+(?:\.\d+)?)(\w+)/, (_match: string, size: string, unit: string) => {
             const newSize = parseFloat(size) * 1.8 // Scale up by 1.8x
             return `${newSize}${unit}`
@@ -1060,7 +1061,7 @@ onMounted(() => {
     const defaultStyle = new Style({
       text: new Text({
         text: icon,
-        font: `bold ${style.fontSize} "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Inter, sans-serif`,
+        font: `bold ${style.fontSize} "Inter", "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`,
         fill: new Fill({ color: style.color }),
         stroke: new Stroke({ 
           color: style.strokeColor, 
@@ -1078,7 +1079,7 @@ onMounted(() => {
       hoverStyle = new Style({
         text: new Text({
           text: icon,
-          font: `bold ${style.fontSize} "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Inter, sans-serif`,
+          font: `bold ${style.fontSize} "Inter", "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`,
           fill: new Fill({ color: '#ffffff' }),
           stroke: new Stroke({ 
             color: style.color, 
@@ -1093,7 +1094,7 @@ onMounted(() => {
       hoverStyle = new Style({
         text: new Text({
           text: icon,
-          font: `bold 1.2rem "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Inter, sans-serif`,
+          font: `bold 1.2rem "Inter", "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`,
           fill: new Fill({ color: '#ffffff' }),
           stroke: new Stroke({ 
             color: style.color, 
@@ -1109,7 +1110,7 @@ onMounted(() => {
     const activeStyle = new Style({
       text: new Text({
         text: icon,
-        font: `bold 1.1rem "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", Inter, sans-serif`,
+        font: `bold 1.1rem "Inter", "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif`,
         fill: new Fill({ color: '#ffeb3b' }),
         stroke: new Stroke({ 
           color: '#1a1a1a', 
@@ -1469,9 +1470,9 @@ onMounted(() => {
         npcDef.name.replace(/(?:^|\s)\S/g, (a: string) => a.toUpperCase()) : ''
     },
     {
-      condition: (npc: any) => Boolean(npc.isAlwaysAggroOverride),
+      condition: (_npc: any, npcDef: any) => Boolean(npcDef?.combat) && Boolean(npcDef.combat.isAlwaysAggro),
       icon: '😈', 
-      category: 'Aggro NPCs',
+      category: 'Aggressive NPCs',
       nameFormatter: (npcDef: any) => {
         const name = typeof npcDef.name === 'string' ? 
           npcDef.name.replace(/(?:^|\s)\S/g, (a: string) => a.toUpperCase()) : ''
@@ -1480,8 +1481,19 @@ onMounted(() => {
       }
     },
     {
-      condition: (_npc: any, npcDef: any) => Boolean(npcDef?.combat),
-      icon: '⚔️',
+      condition: (_npc: any, npcDef: any) => Boolean(npcDef?.combat) && !Boolean(npcDef.combat.isAlwaysAggro) && (npcDef.combat.aggroRadius || 0) >= 1,
+      icon: '😠',
+      category: 'Semi-Aggressive NPCs', 
+      nameFormatter: (npcDef: any) => {
+        const name = typeof npcDef.name === 'string' ? 
+          npcDef.name.replace(/(?:^|\s)\S/g, (a: string) => a.toUpperCase()) : ''
+        const level = npcDef.combat?.level ? ` (Lvl. ${npcDef.combat.level})` : ''
+        return name + level
+      }
+    },
+    {
+      condition: (_npc: any, npcDef: any) => Boolean(npcDef?.combat) && !Boolean(npcDef.combat.isAlwaysAggro) && (npcDef.combat.aggroRadius || 0) === 0,
+      icon: '😐',
       category: 'Attackable NPCs', 
       nameFormatter: (npcDef: any) => {
         const name = typeof npcDef.name === 'string' ? 

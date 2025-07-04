@@ -361,7 +361,7 @@ onUnmounted(() => {
   color: var(--theme-text-muted);
   font-size: 12px;
   font-weight: 500;
-  font-family: 'Courier New', monospace;
+  font-family: 'Inter', 'Courier New', monospace;
   background: var(--theme-background-mute);
   padding: 6px 10px;
   border-radius: 6px;

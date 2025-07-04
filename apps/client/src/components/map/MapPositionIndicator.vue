@@ -225,7 +225,7 @@ const toggleVisibility = () => {
   font-weight: 700;
   font-size: 12px;
   color: var(--theme-accent-light);
-  font-family: 'Courier New', monospace;
+  font-family: 'Inter', 'Courier New', monospace;
 }
 
 .coord-separator {
@@ -449,6 +449,13 @@ const toggleVisibility = () => {
     width: 12px;
     height: 12px;
     font-size: 7px;
+  }
+}
+
+/* Hide position indicator on very small screens */
+@media (max-width: 504px) {
+  .enhanced-coords {
+    display: none;
   }
 }
 
