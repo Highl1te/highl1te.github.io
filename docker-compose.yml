@@ -3,29 +3,39 @@ version: '3.8'
 services:
   app:
     build: .
-    ports:
-      - "80:80"
-      - "3000:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=./database.sqlite
+      - DATABASE_URL=./storage/database.sqlite
     env_file:
       - .env
     volumes:
-      - ./apps/server/database.sqlite:/app/server/database.sqlite
-      - ./apps/server/config:/app/server/config
+      - ./storage/:/app/apps/server/storage:Z
+      - ./apps/server/config:/app/server/config:Z
+      - client-dist:/app/client-dist:Z
     restart: unless-stopped
+    networks:
+      - web
 
-  # Optional: separate database service if using PostgreSQL instead of SQLite
-  # postgres:
-  #   image: postgres:15-alpine
-  #   environment:
-  #     POSTGRES_DB: highlite
-  #     POSTGRES_USER: highlite
-  #     POSTGRES_PASSWORD: your_secure_password
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #   restart: unless-stopped
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:Z
+      - ./nginx/conf.d:/etc/nginx/conf.d:Z
+      - ./ssl:/etc/ssl/certs:Z
+      - client-dist:/usr/share/nginx/html:Z
+    depends_on:
+      app:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - web
 
-# volumes:
-#   postgres_data:
+networks:
+  web:
+    driver: bridge
+
+volumes:
+  client-dist:

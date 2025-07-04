@@ -67,8 +67,8 @@ app.use(cors({
     // In production, also allow the production domain variants
     if (process.env.NODE_ENV === 'production') {
       allowedOrigins.push(
-        'https://highlite.fanet.dev',
-        process.env.CORS_ORIGIN || 'https://highlite.fanet.dev'
+        'https://www.highlite.dev',
+        process.env.CORS_ORIGIN || 'https://www.highlite.dev'
       );
     }
     

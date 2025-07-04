@@ -1952,7 +1952,7 @@ const handleHoverNormal = (evt: any) => {
 
 <style scoped>
 #map {
-  height: calc(100vh - 75px);
+  height: calc(100vh - 76px);
   width: 100%;
   position: relative;
   z-index: 1;

@@ -27,30 +27,24 @@ COPY .env ./.env
 
 # Set environment variables for the build
 ENV NODE_ENV=production
-ENV VITE_API_URL=https://highlite.fanet.dev
+ENV VITE_API_URL=https://www.highlite.dev
 
 # Build all packages
 RUN yarn workspace @highlite/shared build
 RUN yarn workspace @highlite/client build
 RUN yarn workspace @highlite/server build
 
-# Install nginx
-RUN apk add --no-cache nginx
+# Create directories and copy built files
+RUN mkdir -p /app/client-dist-temp
+RUN cp -r apps/client/dist/* /app/client-dist-temp/
 
-# Copy built client files to nginx directory
-RUN mkdir -p /usr/share/nginx/html
-RUN cp -r apps/client/dist/* /usr/share/nginx/html/
+# Create nginx directories for potential volume mounts
+RUN mkdir -p /var/log/nginx /var/lib/nginx/tmp /run/nginx
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+EXPOSE 3000
 
 # Copy startup script
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
-
-# Create nginx directories
-RUN mkdir -p /var/log/nginx /var/lib/nginx/tmp /run/nginx
-
-EXPOSE 80 3000
 
 CMD ["/start.sh"]
