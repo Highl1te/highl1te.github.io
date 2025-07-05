@@ -1,5 +1,5 @@
 <template>
-  <div ref="popupElement" class="ol-popup" style="display: none;">
+  <div ref="popupElement" class="ol-popup" style="display: none; position: absolute;">
     <div class="popup-content enhanced-popup">
       <div class="popup-header">
         <div :class="['popup-type-indicator', popupTypeClass]">
@@ -45,12 +45,11 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import type { Map } from 'ol'
-import Overlay from 'ol/Overlay'
+import maplibregl from 'maplibre-gl'
 
 // Props
 interface Props {
-  map: Map | undefined
+  map: maplibregl.Map | undefined
   content: string
   position: [number, number] | null
   visible: boolean
@@ -70,7 +69,9 @@ const emit = defineEmits<{
 const popupElement = ref<HTMLDivElement>()
 
 // State
-let popupOverlay: Overlay | null = null
+let popupMarker: maplibregl.Marker | null = null
+
+
 
 // Computed
 const displayCoords = computed(() => {
@@ -115,9 +116,9 @@ const popupIcon = computed(() => {
 // Methods
 const centerMap = () => {
   if (props.map && props.position) {
-    props.map.getView().animate({
+    props.map.flyTo({
       center: props.position,
-      zoom: Math.max(props.map.getView().getZoom() || 4, 6),
+      zoom: Math.max(props.map.getZoom(), 6),
       duration: 500
     })
   }
@@ -136,9 +137,19 @@ const pinLocation = () => {
 }
 
 const showPopup = () => {
-  if (!popupElement.value || !props.position) return
+  if (!popupElement.value || !props.position || !props.map) return
   
-  popupOverlay?.setPosition(props.position)
+  // Remove existing popup marker if any
+  if (popupMarker) {
+    popupMarker.remove()
+  }
+  
+  // Create new popup marker
+  popupMarker = new maplibregl.Marker({
+    element: popupElement.value,
+    offset: [0, -100]
+  }).setLngLat(props.position).addTo(props.map)
+  
   popupElement.value.style.display = 'block'
   popupElement.value.style.opacity = '0'
   popupElement.value.style.transform = 'translate(-50%, -100%) translateY(20px) scale(0.8)'
@@ -162,7 +173,10 @@ const hidePopup = () => {
     popupElement.value.style.transform = 'translate(-50%, -100%) translateY(-10px) scale(0.9)'
     
     setTimeout(() => {
-      popupOverlay?.setPosition(undefined)
+      if (popupMarker) {
+        popupMarker.remove()
+        popupMarker = null
+      }
       if (popupElement.value) {
         popupElement.value.style.display = 'none'
       }
@@ -181,52 +195,36 @@ watch(() => props.visible, (newVisible) => {
 
 // Watch for position changes when popup is already visible
 watch(() => props.position, (newPosition) => {
-  if (props.visible && newPosition && popupOverlay) {
-    popupOverlay.setPosition(newPosition)
+  if (props.visible && newPosition && popupMarker) {
+    popupMarker.setLngLat(newPosition)
   }
 })
 
-// Setup overlay when map is available
+
+
+// Setup popup when map is available
 watch(() => props.map, (newMap) => {
-  if (newMap && popupElement.value && !popupOverlay) {
-    popupOverlay = new Overlay({
-      element: popupElement.value,
-      positioning: 'bottom-center',
-      stopEvent: true,
-      offset: [0, -25],
-      autoPan: {
-        animation: {
-          duration: 250,
-        },
-      },
-    })
-    newMap.addOverlay(popupOverlay)
+  if (newMap && popupElement.value && props.visible) {
+    showPopup()
+    
+
   }
 })
 
 onMounted(() => {
-  // Setup overlay if map is already available
-  if (props.map && popupElement.value && !popupOverlay) {
-    popupOverlay = new Overlay({
-      element: popupElement.value,
-      positioning: 'bottom-center',
-      stopEvent: true,
-      offset: [0, -25],
-      autoPan: {
-        animation: {
-          duration: 250,
-        },
-      },
-    })
-    props.map.addOverlay(popupOverlay)
+  // Setup popup if map is already available
+  if (props.map && popupElement.value && props.visible) {
+    showPopup()
   }
 })
 
 onUnmounted(() => {
-  if (popupOverlay && props.map) {
-    props.map.removeOverlay(popupOverlay)
+  if (popupMarker) {
+    popupMarker.remove()
   }
 })
+
+
 </script>
 
 <style>
@@ -245,14 +243,14 @@ onUnmounted(() => {
   border: 2px solid var(--theme-border);
   backdrop-filter: blur(16px);
   overflow: visible;
-  margin-bottom: 16px;
+  margin-bottom: 0;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .ol-popup::after {
   content: '';
   position: absolute;
-  top: 100%;
+  bottom: -16px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
@@ -266,7 +264,7 @@ onUnmounted(() => {
 .ol-popup::before {
   content: '';
   position: absolute;
-  top: 100%;
+  bottom: -18px;
   left: 50%;
   transform: translateX(-50%);
   width: 0;
