@@ -357,7 +357,7 @@ const getCategoryColor = (categoryName: string): string => {
   return colors[categoryName] || '#ffffff'
 }
 
-const getCategoryStrokeColor = (categoryName: string): string => {
+const getCategoryStrokeColor = (_categoryName: string): string => {
   return '#000000'
 }
 
@@ -1274,11 +1274,7 @@ const restoreOriginalCategoryStates = () => {
   }
 }
 
-const updateFilterCategoriesBasedOnSearch = (categoriesWithResults: Set<string>) => {
-  markerCategories.value.forEach(category => {
-    category.visible = categoriesWithResults.has(category.name)
-  })
-}
+
 </script>
 
 <template>
