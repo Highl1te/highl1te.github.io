@@ -37,7 +37,7 @@ const authStore = useAuthStore()
   </div>
 
   <div class="joinUs">
-    <a href="https://discord.gg/SszbKF5dtm" target="_blank">
+    <a href="https://discord.gg/highspell" target="_blank">
       <button>Join us on <Icon icon="simple-icons:discord" /></button>
     </a>
   </div>
