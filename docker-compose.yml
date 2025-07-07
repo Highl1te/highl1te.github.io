@@ -16,6 +16,16 @@ services:
     networks:
       - web
 
+  rss-generator:
+    build: .
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    command: yarn workspace @highlite/rss-generator start
+    restart: unless-stopped
+    networks:
+      - web
+
   nginx:
     image: nginx:alpine
     ports:
