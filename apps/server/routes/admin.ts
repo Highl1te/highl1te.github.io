@@ -1,9 +1,9 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction, Router } from 'express';
 import { getDatabase } from '../config/database.js';
 import { requireAuth } from './auth.js';
 import { randomBytes } from 'crypto';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // Middleware to check if user is admin
 const requireAdmin = async (req: Request, res: Response, next: NextFunction): Promise<void> => {

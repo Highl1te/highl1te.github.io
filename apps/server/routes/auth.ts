@@ -1,7 +1,7 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction, Router } from 'express';
 import passport, { isDiscordConfigured } from '../config/passport.js';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // Middleware to check if user is authenticated via session
 export const requireAuth = (req: Request, res: Response, next: NextFunction): void => {
