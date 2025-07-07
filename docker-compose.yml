@@ -21,7 +21,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3001
-    command: yarn workspace @highlite/rss-generator start
+    command: /start-rss.sh
     restart: unless-stopped
     networks:
       - web
