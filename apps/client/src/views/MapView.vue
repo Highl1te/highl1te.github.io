@@ -601,13 +601,15 @@ const handleSearchLocationSelected = (result: any) => {
     const lat = (y / 1024) * 20 - 10
     return [lng, lat]
   }
+
+  console.log(map?.getZoom());
   
   // Center map on the location with smooth animation
   setTimeout(() => {
     const mapCoords = gameToLngLat(result.x, result.y)
     map?.flyTo({
       center: mapCoords,
-      zoom: Math.max(map?.getZoom() || 4, 24),
+      zoom: (map?.getZoom() ?? 7.5) < 7.5 ? 7.5 : (map?.getZoom() ?? 7.5), // Default to zoom 7.5 if map doesn't exist or is zoomed out further than 7.5
       duration: 800
     })
   }, 100)
@@ -1060,6 +1062,7 @@ onMounted(() => {
     const level = urlParams.get('lvl')
     const posX = urlParams.get('pos_x')
     const posY = urlParams.get('pos_y')
+    const zoom = urlParams.get('zoom') ?? '7.5' // Default zoom level if not specified
     const hideDecor = urlParams.get('hide_decor')
     let playPositionMarker: maplibregl.Marker | null = null
     
@@ -1102,7 +1105,7 @@ onMounted(() => {
       // Set map center to the player position
       map.flyTo({
         center: mapCoords,
-        zoom: 20,
+        zoom: zoom,
         duration: 1500
       })
       
