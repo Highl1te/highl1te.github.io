@@ -9,9 +9,10 @@ onMounted(() => {
 
   const releaseAssets = {
     windows: '',
-    linux: '',
+    linuxX64: '',
+    linuxArm64: '',
     mac: '',
-    unkown: ''
+    unknown: ''
   };
 
   // Obtain Release Information from Github API
@@ -22,14 +23,16 @@ onMounted(() => {
       data.assets.forEach((asset: any) => {
         if (asset.name.endsWith('.exe')) {
           releaseAssets.windows = asset.browser_download_url;
-        } else if (asset.name.endsWith('.AppImage')) {
-          releaseAssets.linux = asset.browser_download_url;
+        } else if (asset.name.includes('arm64') && asset.name.endsWith('.AppImage')) {
+          releaseAssets.linuxArm64 = asset.browser_download_url;
+        } else if (asset.name.endsWith('.AppImage') && !asset.name.includes('arm64')) {
+          releaseAssets.linuxX64 = asset.browser_download_url;
         } else if (asset.name.endsWith('.dmg')) {
           releaseAssets.mac = asset.browser_download_url;
         }
       });
 
-      releaseAssets.unkown = "https://github.com/HighL1te/HighLiteDesktop/releases/latest";
+      releaseAssets.unknown = "https://github.com/HighL1te/HighLiteDesktop/releases/latest";
     })
     .catch(error => console.error('Error fetching release info:', error));
 
@@ -64,15 +67,31 @@ onMounted(() => {
   }
   if (downloadButton) {
     downloadButton.addEventListener('click', () => {
-      const userOS = window.navigator.platform.toLowerCase();
-      if (userOS.includes('win')) {
-        window.open(releaseAssets.windows);
-      } else if (userOS.includes('linux')) {
-        window.open(releaseAssets.linux);
-      } else if (userOS.includes('mac')) {
-        window.open(releaseAssets.mac);
+      // Get user agent and platform information
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      const platform = window.navigator.platform.toLowerCase();
+      
+      // Detect OS and architecture
+      if (platform.includes('win') || userAgent.includes('windows')) {
+        // Windows
+        window.open(releaseAssets.windows || releaseAssets.unknown);
+      } else if (platform.includes('mac') || userAgent.includes('mac')) {
+        // macOS
+        window.open(releaseAssets.mac || releaseAssets.unknown);
+      } else if (platform.includes('linux') || userAgent.includes('linux')) {
+        // Linux - detect architecture
+        const isArm64 = userAgent.includes('aarch64') || 
+                       userAgent.includes('arm64') || 
+                       platform.includes('arm');
+        
+        if (isArm64) {
+          window.open(releaseAssets.linuxArm64 || releaseAssets.linuxX64 || releaseAssets.unknown);
+        } else {
+          window.open(releaseAssets.linuxX64 || releaseAssets.linuxArm64 || releaseAssets.unknown);
+        }
       } else {
-        window.open(releaseAssets.unkown);
+        // Unknown OS - redirect to releases page
+        window.open(releaseAssets.unknown);
       }
     })
   };

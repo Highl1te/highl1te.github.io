@@ -1062,56 +1062,72 @@ onMounted(() => {
     const level = urlParams.get('lvl')
     const posX = urlParams.get('pos_x')
     const posY = urlParams.get('pos_y')
-    const zoom = urlParams.get('zoom') ?? '7.5' // Default zoom level if not specified
+    const zoomParam = urlParams.get('zoom') ?? '7.5' // Default zoom level if not specified
+    const zoom = Math.max(0, Math.min(28, parseFloat(zoomParam))) // Convert to number and clamp between 0-28 for map.flyTo()
     const hideDecor = urlParams.get('hide_decor')
     let playPositionMarker: maplibregl.Marker | null = null
     
     if (posX && posY) {
       // Convert game coordinates to longitude/latitude
-      const mapCoords = gameToLngLat(+posX, +posY)
+      // Ensure coordinates are valid numbers
+      const x = parseFloat(posX)
+      const y = parseFloat(posY)
       
-      // Create player marker
-      const markerElement = document.createElement('div')
-      markerElement.className = 'text-label'
-      markerElement.innerHTML = `<div class="marker playerPosition">
-        <span style="
-          display: inline-block;
-          font-size:1.5rem;
-          color:red;
-          text-shadow: 0px 0px 8px black;
-          animation: spin 10s linear infinite;
-          transform-origin: center;
-        ">❌</span>
-      </div>`
-      markerElement.title = 'You are here'
-      
-      // Add CSS keyframes for spinning animation
-      if (!document.querySelector('#player-marker-styles')) {
-        const style = document.createElement('style')
-        style.id = 'player-marker-styles'
-        style.textContent = `
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-        `
-        document.head.appendChild(style)
-      }
-      
-      playPositionMarker = new maplibregl.Marker({
-        element: markerElement
-      }).setLngLat(mapCoords).addTo(map)
-      
-      // Set map center to the player position
-      map.flyTo({
-        center: mapCoords,
-        zoom: zoom,
-        duration: 1500
-      })
-      
-      // Set layer if specified in URL
-      if (level && ['Overworld', 'Underworld', 'Sky'].includes(level)) {
-        selectedLayer.value = level
+      if (!isNaN(x) && !isNaN(y) && isFinite(x) && isFinite(y)) {
+        const mapCoords = gameToLngLat(x, y)
+        
+        // Validate that the converted coordinates are within map bounds
+        const [lng, lat] = mapCoords
+        if (lng >= -36 && lng <= 36 && lat >= -36 && lat <= 36) {
+        
+        // Create player marker
+        const markerElement = document.createElement('div')
+        markerElement.className = 'text-label'
+        markerElement.innerHTML = `<div class="marker playerPosition">
+          <span style="
+            display: inline-block;
+            font-size:1.5rem;
+            color:red;
+            text-shadow: 0px 0px 8px black;
+            animation: spin 10s linear infinite;
+            transform-origin: center;
+          ">❌</span>
+        </div>`
+        markerElement.title = 'You are here'
+        
+        // Add CSS keyframes for spinning animation
+        if (!document.querySelector('#player-marker-styles')) {
+          const style = document.createElement('style')
+          style.id = 'player-marker-styles'
+          style.textContent = `
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+          `
+          document.head.appendChild(style)
+        }
+        
+        playPositionMarker = new maplibregl.Marker({
+          element: markerElement
+        }).setLngLat(mapCoords).addTo(map)
+        
+        // Set map center to the player position
+        map.flyTo({
+          center: mapCoords,
+          zoom: zoom,
+          duration: 1500
+        })
+        
+        // Set layer if specified in URL
+        if (level && ['Overworld', 'Underworld', 'Sky'].includes(level)) {
+          selectedLayer.value = level
+        }
+        } else {
+          console.warn('Invalid coordinates provided in URL parameters - coordinates out of bounds')
+        }
+      } else {
+        console.warn('Invalid coordinates provided in URL parameters - not valid numbers')
       }
     } else {
       // Only fit bounds if no URL position parameters are present
@@ -1155,15 +1171,28 @@ onMounted(() => {
 
     // Set initial layer based on URL param
     if (level) {
+      const mapElement = document.getElementById('map')
       switch (level) {
         case 'Overworld':
           selectedLayer.value = 'Overworld'
+          setLayerVisibility('overworld', true)
+          setLayerVisibility('underworld', false)
+          setLayerVisibility('sky', false)
+          if (mapElement) mapElement.style.backgroundColor = '#3b85b9'
           break
         case 'Underworld':
           selectedLayer.value = 'Underworld'
+          setLayerVisibility('overworld', false)
+          setLayerVisibility('underworld', true)
+          setLayerVisibility('sky', false)
+          if (mapElement) mapElement.style.backgroundColor = 'black'
           break
         case 'Sky':
           selectedLayer.value = 'Sky'
+          setLayerVisibility('overworld', false)
+          setLayerVisibility('underworld', false)
+          setLayerVisibility('sky', true)
+          if (mapElement) mapElement.style.backgroundColor = 'black'
           break
       }
     } else {

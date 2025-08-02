@@ -10,11 +10,11 @@
           <p>Buy and sell items with other players</p>
         </div>
         <div class="header-stats">
-          <div class="stat" :class="{ pulse: marketplace.listings.value.length > 0 }">
+          <div class="stat">
             <Icon icon="mdi:package-variant" />
             <span>{{ marketplace.listings.value.length }} Active Listings</span>
           </div>
-          <div class="stat" :class="{ pulse: totalOffers > 0 }">
+          <div class="stat">
             <Icon icon="mdi:handshake" />
             <span>{{ totalOffers }} Total Offers</span>
           </div>
@@ -182,7 +182,7 @@
               <div class="item-preview-info">
                 <h3>{{ getItemName(editingListing.item_id) }}</h3>
                 <p>{{ getItemDescription(editingListing.item_id) }}</p>
-                <p class="base-cost">Base cost: {{ getItem(editingListing.item_id)?.cost }} coins</p>
+                <p class="base-cost">Base cost: {{ formatAmount(getItem(editingListing.item_id)?.cost || 0) }} coins</p>
                 <div class="listing-type-badge">
                   <Icon :icon="editingListing.listing_type === 'buying' ? 'mdi:cash' : 'mdi:tag'" />
                   {{ editingListing.listing_type === 'buying' ? 'BUYING' : 'SELLING' }}
@@ -264,8 +264,8 @@
       </div>
     </div>
 
-    <!-- Filters & Search Bar -->
-    <div class="filters-bar">
+    <!-- Search and Type Filter Bar -->
+    <div class="search-and-filters-bar">
       <!-- Search Input -->
       <div class="search-container">
         <Icon icon="mdi:magnify" class="search-icon" />
@@ -283,106 +283,19 @@
         </button>
       </div>
 
-      <!-- Sort Dropdown -->
-      <div class="sort-container">
-        <Icon icon="mdi:sort" class="sort-icon" />
-        <select v-model="sortBy" class="sort-select">
-          <option 
-            v-for="option in sortOptions" 
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </option>
+      <!-- Listing Type Filter -->
+      <div class="listing-type-filter">
+        <label>Show:</label>
+        <select v-model="listingTypeFilter" class="listing-type-select">
+          <option value="all">All Listings</option>
+          <option value="selling">For Sale</option>
+          <option value="buying">Buying Requests</option>
         </select>
       </div>
-
-      <!-- Price Range -->
-      <div class="price-container">
-        <Icon icon="mdi:cash-multiple" class="price-icon" />
-        <input 
-          type="number" 
-          v-model="priceFilter.min" 
-          placeholder="Min price" 
-          class="price-input"
-          min="0"
-        >
-        <span class="price-separator">-</span>
-        <input 
-          type="number" 
-          v-model="priceFilter.max" 
-          placeholder="Max price" 
-          class="price-input"
-          min="0"
-        >
-      </div>
-
-      <!-- Filter Options -->
-      <div class="filter-toggles">
-        <button 
-          @click="showOnlyTradeableItems = !showOnlyTradeableItems"
-          :class="['toggle-btn', { active: showOnlyTradeableItems }]"
-          title="Show only items that accept trades"
-        >
-          <Icon icon="mdi:swap-horizontal" />
-          <span>Trades</span>
-        </button>
-        <button 
-          @click="showOnlyOwnListings = !showOnlyOwnListings"
-          :class="['toggle-btn', { active: showOnlyOwnListings }]"
-          title="Show only my listings"
-        >
-          <Icon icon="mdi:account" />
-          <span>Mine</span>
-        </button>
-      </div>
-
-      <!-- Clear Filters -->
-      <button 
-        v-if="hasActiveFilters"
-        @click="clearFilters" 
-        class="clear-all-btn"
-        title="Clear all filters"
-      >
-        <Icon icon="mdi:filter-off" />
-        <span>Clear</span>
-      </button>
     </div>
 
     <!-- Listings -->
     <div class="listings-section">
-      <div class="section-header">          <h3>
-            <Icon icon="mdi:view-grid" />
-            Active Listings ({{ filteredListings.length }})
-            <span v-if="filteredListings.length !== marketplace.listings.value.length" class="filter-indicator">
-              of {{ marketplace.listings.value.length }} total
-            </span>
-          </h3>
-        <div class="view-controls">
-          <button @click="toggleQuickFilters" class="quick-filters-btn" :class="{ active: showQuickFilters }">
-            <Icon icon="mdi:tune-vertical" />
-            Quick Filters
-            <span v-if="activeQuickFiltersCount > 0" class="filter-count-badge">{{ activeQuickFiltersCount }}</span>
-          </button>
-        </div>
-      </div>
-      
-      <!-- Quick Filters Bar -->
-      <div v-if="showQuickFilters" class="quick-filters-bar" @click.stop>
-        <div class="quick-filter-chips">
-          <button 
-            v-for="chip in quickFilterChips" 
-            :key="chip.key"
-            @click="applyQuickFilter(chip)"
-            :class="['filter-chip', { active: isQuickFilterActive(chip) }]"
-            :data-filter="chip.key"
-          >
-            <Icon :icon="chip.icon" />
-            {{ chip.label }}
-          </button>
-        </div>
-      </div>
-
       <!-- Pending Trades Section -->
       <div v-if="authStore.isAuthenticated && marketplace.pendingTrades.value.length > 0" class="pending-trades-section">
         <div class="section-header">
@@ -419,14 +332,14 @@
                 />
                 <div class="trade-item-info">
                   <h4>{{ getItemName(trade.item_id) }}</h4>
-                  <p>{{ trade.quantity }}x - {{ trade.asking_price }} coins</p>
+                  <p>{{ trade.quantity }}x - {{ formatAmount(trade.asking_price) }} coins</p>
                 </div>
               </div>
               
               <div class="trade-offer">
                 <div v-if="trade.coin_offer > 0" class="coin-offer">
                   <Icon icon="mdi:coin" />
-                  <span>{{ trade.coin_offer }} coins</span>
+                  <span>{{ formatAmount(trade.coin_offer) }} coins</span>
                 </div>
                 <div v-if="trade.item_offers && trade.item_offers.length > 0" class="item-offers">
                   <div v-for="itemOffer in trade.item_offers" :key="itemOffer.id" class="offered-item">
@@ -515,147 +428,176 @@
         </button>
       </div>
 
-      <TransitionGroup name="listing" tag="div" class="listings-grid">
-        <div v-for="listing in filteredListings" :key="listing.id" 
-             :data-listing-id="listing.id"
-             class="listing-card" 
-             :class="{ 
-               'own-listing': isOwnListing(listing),
-               'buying-listing': listing.listing_type === 'buying',
-               'selling-listing': listing.listing_type === 'selling',
-               'infinite-listing': isInfiniteListing(listing)
-             }">
-            
-            <div class="listing-header">
-              <!-- Listing Tags Chip Area - moved to header -->
-              <div class="listing-tags">
-                <!-- Priority 1: Listing Type (always shown) -->
-                <div class="tag-chip listing-type" :class="listing.listing_type">
-                  <Icon :icon="listing.listing_type === 'buying' ? 'mdi:cash' : 'mdi:tag'" />
-                  {{ listing.listing_type === 'buying' ? 'BUYING' : 'SELLING' }}
-                </div>
-                
-                <!-- Priority 1.5: Infinite quantity (high importance) -->
-                <div v-if="isInfiniteListing(listing)" class="tag-chip infinite">
-                  <Icon icon="mdi:infinity" />
-                  UNLIMITED
-                </div>
-                
-                <!-- Priority 2: Ownership (high importance) -->
-                <div v-if="isOwnListing(listing)" class="tag-chip owner">
-                  <Icon icon="mdi:account" />
-                  YOURS
-                </div>
-                
-                <!-- Priority 3: Recent listing (attention grabbing) -->
-                <div v-if="isRecentListing(listing)" class="tag-chip recent">
-                  <Icon icon="mdi:new-box" />
-                  NEW
-                </div>
-                
-                <!-- Priority 4: Popularity (social proof) -->
-                <div v-if="getOfferCount(listing.id) > 0" class="tag-chip popular">
-                  <Icon icon="mdi:fire" />
-                  {{ getOfferCount(listing.id) }}
-                </div>
-                
-                <!-- Priority 5: Accepts trades (feature) -->
-                <div v-if="listing.accepts_items" class="tag-chip trades">
-                  <Icon icon="mdi:swap-horizontal" />
-                  TRADES
-                </div>
-                
-                <!-- Priority 6: Accepts partial offers (feature) -->
-                <div v-if="listing.accepts_partial_offers" class="tag-chip partial">
-                  <Icon icon="mdi:chart-box-multiple-outline" />
-                  PARTIAL
-                </div>
-              </div>
+      <!-- Listings Table -->
+      <div v-if="filteredListings.length > 0" class="listings-table-container">
+        <table class="listings-table">
+          <thead>
+            <tr>
+              <th class="item-column">Item</th>
+              <th class="quantity-column sortable" @click="sortByColumn('quantity')">
+                <span>
+                  Quantity
+                  <Icon 
+                    :icon="sortColumn === 'quantity' && sortDirection === 'desc' ? 'mdi:arrow-down' : 'mdi:arrow-up'" 
+                    :style="{ opacity: sortColumn === 'quantity' ? 1 : 0.4 }"
+                  />
+                </span>
+              </th>
+              <th class="price-column sortable" @click="sortByColumn('price')">
+                <span>
+                  Price
+                  <Icon 
+                    :icon="sortColumn === 'price' && sortDirection === 'desc' ? 'mdi:arrow-down' : 'mdi:arrow-up'" 
+                    :style="{ opacity: sortColumn === 'price' ? 1 : 0.4 }"
+                  />
+                </span>
+              </th>
+              <th class="offers-column sortable" @click="sortByColumn('offers')">
+                <span>
+                  Offers
+                  <Icon 
+                    :icon="sortColumn === 'offers' && sortDirection === 'desc' ? 'mdi:arrow-down' : 'mdi:arrow-up'" 
+                    :style="{ opacity: sortColumn === 'offers' ? 1 : 0.4 }"
+                  />
+                </span>
+              </th>
+              <th class="actions-column">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="listing in filteredListings" 
+                :key="listing.id"
+                :data-listing-id="listing.id"
+                class="listing-row"
+                :class="{ 
+                  'own-listing': isOwnListing(listing),
+                  'buying-listing': listing.listing_type === 'buying',
+                  'selling-listing': listing.listing_type === 'selling',
+                  'infinite-listing': isInfiniteListing(listing)
+                }"
+                @click="viewOffers(listing)"
+                style="cursor: pointer">
               
-              <div class="listing-header-content">
+              <!-- Item Column -->
+              <td class="item-cell">
                 <div class="item-info">
-                  <div class="item-icon-container" @click="showItemDetails(listing.item_id)">
+                  <div class="item-icon-container">
                     <ItemIcon 
                       :item-id="listing.item_id" 
                       :item-name="getItemName(listing.item_id)"
                       size="medium"
                     />
-                    <div class="icon-overlay">
-                      <Icon icon="mdi:magnify" />
-                    </div>
                   </div>
                   <div class="item-details">
-                    <h3>{{ getItemName(listing.item_id) }}</h3>
-                    <p class="quantity">
-                      <Icon icon="mdi:counter" />
-                      {{ listing.quantity === -1 ? '∞' : listing.quantity }}{{ listing.quantity === -1 ? '' : 'x' }}
-                    </p>
+                    <h4 class="item-name" 
+                        :data-type="listing.listing_type.toUpperCase()" 
+                        :data-quantity="listing.quantity === -1 ? '∞' : listing.quantity + 'x'">
+                      {{ getItemName(listing.item_id) }}
+                    </h4>
+                    <div class="listing-type-and-features">
+                      <div class="listing-type-label" :class="listing.listing_type">
+                        <Icon :icon="listing.listing_type === 'buying' ? 'mdi:cash' : 'mdi:tag'" />
+                        <span>{{ listing.listing_type === 'buying' ? 'Buying Request' : 'For Sale' }}</span>
+                        <div v-if="isOwnListing(listing)" class="owner-indicator">
+                          <Icon icon="mdi:account" />
+                          <span>YOURS</span>
+                        </div>
+                      </div>
+                      <!-- Feature badges inline with listing type -->
+                      <div class="inline-feature-badges">
+                        <div v-if="listing.accepts_items" class="feature-badge trades">
+                          <Icon icon="mdi:swap-horizontal" />
+                          Trades
+                        </div>
+                        <div v-if="listing.accepts_partial_offers" class="feature-badge partial">
+                          <Icon icon="mdi:chart-box-multiple-outline" />
+                          Partial
+                        </div>
+                        <div v-if="isRecentListing(listing)" class="feature-badge recent">
+                          <Icon icon="mdi:new-box" />
+                          New
+                        </div>
+                      </div>
+                    </div>
+                    <div class="created-by">
+                      <span class="created-by-label">Created By:</span>
+                      <span class="creator-name" @click.stop="showSellerProfile(listing.seller_discord_id)">
+                        {{ marketplace.formatDiscordUsername(listing.seller_name, listing.seller_discriminator) }}
+                      </span>
+                    </div>
                     <div class="listing-age">
                       <Icon icon="mdi:clock-outline" />
                       {{ getRelativeTime(listing.created_at) }}
                     </div>
                   </div>
                 </div>
-                <div class="listing-meta">
-                  <div class="seller-info" @click="showSellerProfile(listing.seller_discord_id)">
-                    <div class="seller-avatar">
-                      <img 
-                        :src="marketplace.getDiscordAvatarUrl(listing.seller_discord_id, listing.seller_avatar)" 
-                        :alt="`${listing.seller_name}'s avatar`"
-                        @error="(e) => (e.target as HTMLImageElement).src = marketplace.getDiscordAvatarUrl(listing.seller_discord_id)"
-                      />
-                    </div>
-                    <span class="seller">{{ marketplace.formatDiscordUsername(listing.seller_name, listing.seller_discriminator) }}</span>
-                    <Icon icon="mdi:chevron-right" class="profile-arrow" />
+              </td>
+
+              <!-- Quantity Column -->
+              <td class="quantity-cell">
+                <div class="quantity-info">
+                  <span class="quantity-value">
+                    {{ listing.quantity === -1 ? '∞' : listing.quantity }}{{ listing.quantity === -1 ? '' : 'x' }}
+                  </span>
+                </div>
+              </td>
+
+              <!-- Price Column -->
+              <td class="price-cell">
+                <div class="price-info">
+                  <div class="price-amount">
+                    <Icon icon="mdi:coin" />
+                    <span class="price-value">{{ formatAmount(listing.asking_price) }}</span>
+                  </div>
+                  <div class="price-label">
+                    {{ listing.listing_type === 'buying' ? 'offered' : 'asked' }}
+                    {{ listing.accepts_partial_offers ? ' per item' : '' }}
                   </div>
                 </div>
-              </div>
-            </div>
-          
-          <div class="listing-body">
-            <div class="price-section">
-              <div class="asking-price">
-                <Icon icon="mdi:coin" />
-                <span class="price-amount">{{ listing.asking_price }}</span>
-                <span class="price-label">
-                  coins {{ listing.listing_type === 'buying' ? 'offered' : 'asked' }}
-                  {{ listing.accepts_partial_offers ? ' per item' : '' }}
-                </span>
-              </div>
-            </div>
+              </td>
 
-            <div v-if="listing.notes" class="notes">
-              <Icon icon="mdi:note-text" />
-              <div class="notes-content">
-                <strong>{{ listing.listing_type === 'buying' ? 'Buyer' : 'Seller' }} Notes:</strong> {{ listing.notes }}
-              </div>
-            </div>
-          </div>
+              <!-- Offers Column -->
+              <td class="offers-cell">
+                <div class="offers-info">
+                  <span class="offers-count">{{ getOfferCount(listing.id) }}</span>
+                  <div v-if="getOfferCount(listing.id) > 0" class="popular-badge">
+                    <Icon icon="mdi:fire" />
+                  </div>
+                </div>
+              </td>
 
-            <div class="listing-actions">
-              <button 
-                v-if="!isOwnListing(listing)" 
-                @click="showMakeOffer(listing)" 
-                class="btn btn-primary"
-              >
-                <Icon icon="mdi:handshake" />
-                {{ listing.listing_type === 'buying' ? 'Make Counter-Offer' : 'Make Offer' }}
-              </button>
-              <button @click="viewOffers(listing)" class="btn btn-secondary">
-                <Icon icon="mdi:eye" />
-                View Offers ({{ getOfferCount(listing.id) }})
-              </button>
-              <button v-if="isOwnListing(listing)" @click="editListing(listing)" class="btn btn-secondary">
-                <Icon icon="mdi:pencil" />
-                Edit
-              </button>
-              <button v-if="isOwnListing(listing)" @click="removeListing(listing.id)" class="btn btn-danger">
-                <Icon icon="mdi:delete" />
-                Remove
-              </button>
-            </div>
-          </div>
-        </TransitionGroup>
+              <!-- Actions Column -->
+              <td class="actions-cell">
+                <div class="listing-actions">
+                  <button 
+                    @click.stop="viewOffers(listing)" 
+                    class="btn btn-secondary btn-sm"
+                    :title="`View Offers (${getOfferCount(listing.id)})`"
+                  >
+                    <Icon icon="mdi:eye" />
+                  </button>
+                  <button 
+                    v-if="isOwnListing(listing)" 
+                    @click.stop="editListing(listing)" 
+                    class="btn btn-secondary btn-sm"
+                    title="Edit Listing"
+                  >
+                    <Icon icon="mdi:pencil" />
+                  </button>
+                  <button 
+                    v-if="isOwnListing(listing)" 
+                    @click.stop="removeListing(listing.id)" 
+                    class="btn btn-danger btn-sm"
+                    title="Remove Listing"
+                  >
+                    <Icon icon="mdi:delete" />
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- View Offers Modal -->
@@ -668,86 +610,206 @@
           </button>
         </div>
         <div class="modal-body" v-if="selectedListingForOffers">
-          <div class="listing-summary">
-            <div class="listing-item">
-              <ItemIcon 
-                :item-id="selectedListingForOffers.item_id" 
-                :item-name="getItemName(selectedListingForOffers.item_id)"
-                size="medium"
-              />
-              <div class="listing-details">
-                <h3>{{ getItemName(selectedListingForOffers.item_id) }}</h3>
-                <p>Quantity: {{ selectedListingForOffers.quantity }}</p>
-                <p class="price">{{ selectedListingForOffers.asking_price }} coins</p>
-                <p v-if="selectedListingForOffers.accepts_items" class="accepts-trades">
-                  <Icon icon="mdi:swap-horizontal" /> Accepts item trades
-                </p>
+          <!-- Enhanced listing summary -->
+          <div class="listing-summary-enhanced">
+            <div class="listing-main-info">
+              <div class="item-display">
+                <ItemIcon 
+                  :item-id="selectedListingForOffers.item_id" 
+                  :item-name="getItemName(selectedListingForOffers.item_id)"
+                  size="large"
+                />
+                <div class="item-basic-info">
+                  <div class="item-name-with-badges" style="display: flex; align-items: center; gap: 12px;">
+                    <h3 class="item-name">{{ getItemName(selectedListingForOffers.item_id) }}</h3>
+                    <!-- Trade Options Badges inline with item name -->
+                    <div class="trade-options-badges" style="display: flex; gap: 6px;">
+                      <div v-if="selectedListingForOffers.accepts_items" class="feature-badge trades">
+                        <Icon icon="mdi:swap-horizontal" />
+                        Trades
+                      </div>
+                      <div v-if="selectedListingForOffers.accepts_partial_offers" class="feature-badge partial">
+                        <Icon icon="mdi:chart-box-multiple-outline" />
+                        Partial
+                      </div>
+                    </div>
+                  </div>
+                  <p class="item-description">{{ getItemDescription(selectedListingForOffers.item_id) }}</p>
+                  <div class="item-meta">
+                    <span class="offered-price">
+                      <Icon icon="mdi:tag" />
+                      {{ selectedListingForOffers.listing_type === 'buying' ? 'Offered' : 'Listed' }}: {{ formatAmount(selectedListingForOffers.asking_price) }} coins{{ selectedListingForOffers.accepts_partial_offers || selectedListingForOffers.quantity === -1 ? '/ea' : '' }}
+                    </span>
+                    <span class="market-avg">
+                      <Icon icon="mdi:chart-line" />
+                      Market Avg: {{ formatAmount(getMarketStats(selectedListingForOffers.item_id).avgPrice || 0) }} coins
+                    </span>
+                    <span class="tradeable-status">
+                      <Icon :icon="getItem(selectedListingForOffers.item_id)?.isTradeable ? 'mdi:check-circle' : 'mdi:close-circle'" />
+                      {{ getItem(selectedListingForOffers.item_id)?.isTradeable ? 'Tradeable' : 'Non-tradeable' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="listing-details-compact">
+                <!-- Quantity -->
+                <div class="detail-item-compact">
+                  <div class="detail-icon-container quantity-icon">
+                    <Icon icon="mdi:package-variant" />
+                  </div>
+                  <div class="detail-content">
+                    <div class="detail-label">Quantity</div>
+                    <div class="detail-value">
+                      {{ selectedListingForOffers.quantity === -1 ? 'Unlimited' : `${selectedListingForOffers.quantity} items` }}
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Seller Info -->
+                <div class="detail-item-compact">
+                  <div class="detail-icon-container seller-icon">
+                    <Icon icon="mdi:account" />
+                  </div>
+                  <div class="detail-content">
+                    <div class="detail-label">Seller</div>
+                    <div 
+                      class="detail-value seller-name-link" 
+                      @click="showSellerProfile(selectedListingForOffers.seller_discord_id)"
+                    >
+                      {{ marketplace.formatDiscordUsername(selectedListingForOffers.seller_name, selectedListingForOffers.seller_discriminator) }}
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Created Time -->
+                <div class="detail-item-compact">
+                  <div class="detail-icon-container time-icon">
+                    <Icon icon="mdi:clock-outline" />
+                  </div>
+                  <div class="detail-content">
+                    <div class="detail-label">Created</div>
+                    <div class="detail-value">
+                      {{ getRelativeTime(selectedListingForOffers.created_at) }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Listing Notes Section -->
+            <div v-if="selectedListingForOffers.notes && selectedListingForOffers.notes.trim()" class="listing-notes-section">
+              <div class="listing-notes-header">
+                <Icon icon="mdi:note-text" />
+                <span>Seller Notes</span>
+              </div>
+              <div class="listing-notes-content">
+                <p>{{ selectedListingForOffers.notes }}</p>
+              </div>
+            </div>
+            
+            <!-- Market Statistics (collapsible) -->
+            <div class="market-stats-section">
+              <button class="market-stats-toggle" @click="showMarketStats = !showMarketStats" type="button">
+                <Icon :icon="showMarketStats ? 'mdi:chevron-up' : 'mdi:chart-line'" />
+                <span>Market Statistics</span>
+                <small>{{ showMarketStats ? 'Hide' : 'View market data for this item' }}</small>
+              </button>
+              
+              <div v-if="showMarketStats" class="market-stats-content">
+                <div class="market-stats-grid">
+                  <div class="market-stat">
+                    <Icon icon="mdi:storefront" />
+                    <div class="stat-info">
+                      <span class="stat-value">{{ getMarketStats(selectedListingForOffers.item_id).activeListings }}</span>
+                      <span class="stat-label">Active Listings</span>
+                    </div>
+                  </div>
+                  <div class="market-stat">
+                    <Icon icon="mdi:trending-up" />
+                    <div class="stat-info">
+                      <span class="stat-value">{{ formatAmount(getMarketStats(selectedListingForOffers.item_id).avgPrice) }}</span>
+                      <span class="stat-label">Average Price</span>
+                    </div>
+                  </div>
+                  <div class="market-stat">
+                    <Icon icon="mdi:chart-bar" />
+                    <div class="stat-info">
+                      <span class="stat-value">{{ getMarketStats(selectedListingForOffers.item_id).priceRange }}</span>
+                      <span class="stat-label">Price Range</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           <div class="offers-list">
-            <h3>All Offers ({{ getOffersForListing(selectedListingForOffers.id).length }})</h3>
+            <div class="offers-list-header">
+              <h3>Offers ({{ getOffersForListing(selectedListingForOffers.id).length }})</h3>
+              <button 
+                v-if="!isOwnListing(selectedListingForOffers) && authStore.isAuthenticated"
+                @click="showMakeOffer(selectedListingForOffers)" 
+                class="btn btn-primary btn-sm"
+              >
+                <Icon icon="mdi:plus" />
+                Make Offer
+              </button>
+              <button 
+                v-else-if="!authStore.isAuthenticated"
+                @click="authStore.login" 
+                class="btn btn-primary btn-sm"
+              >
+                <Icon icon="mdi:login" />
+                Login
+              </button>
+            </div>
             <div v-if="getOffersForListing(selectedListingForOffers.id).length === 0" class="no-offers">
               <Icon icon="mdi:email-outline" />
               <p>No offers yet for this listing.</p>
-              <p class="no-offers-subtitle">Be the first to make an offer!</p>
             </div>
-            <div v-for="offer in getOffersForListing(selectedListingForOffers.id)" :key="offer.id" class="offer-card-modal">
-              <div class="offer-header">
-                <div class="buyer-info">
-                  <div class="buyer-avatar">
-                    <img 
-                      :src="marketplace.getDiscordAvatarUrl(offer.buyer_discord_id, offer.buyer_avatar)" 
-                      :alt="`${offer.buyer_name}'s avatar`"
-                      @error="(e) => (e.target as HTMLImageElement).src = marketplace.getDiscordAvatarUrl(offer.buyer_discord_id)"
-                    />
-                  </div>
-                  <div class="buyer-details">
+            <div v-for="offer in getOffersForListing(selectedListingForOffers.id)" :key="offer.id" class="offer-card-compact">
+              <!-- Offer header with buyer info -->
+              <div class="offer-header-compact">
+                <div class="buyer-info-compact">
+                  <img 
+                    :src="marketplace.getDiscordAvatarUrl(offer.buyer_discord_id, offer.buyer_avatar)" 
+                    :alt="`${offer.buyer_name}'s avatar`"
+                    class="buyer-avatar-small"
+                    @error="(e) => (e.target as HTMLImageElement).src = marketplace.getDiscordAvatarUrl(offer.buyer_discord_id)"
+                  />
+                  <div class="buyer-details-compact">
                     <span class="buyer-name">{{ marketplace.formatDiscordUsername(offer.buyer_name, offer.buyer_discriminator) }}</span>
                     <span class="offer-date">{{ formatDate(offer.created_at) }}</span>
                   </div>
                 </div>
-                <div class="offer-value">
-                  <Icon icon="mdi:tag" />
-                  <span class="total-value">Total Value</span>
+                <div class="offer-value-display">
+                  <span v-if="offer.coin_offer" class="coin-value">{{ formatAmount(offer.coin_offer) }} coins</span>
+                  <span v-if="offer.item_offers && offer.item_offers.length > 0" class="item-count">+ {{ offer.item_offers.length }} item{{ offer.item_offers.length > 1 ? 's' : '' }}</span>
                 </div>
               </div>
               
-              <div class="offer-content">
-                <div v-if="offer.coin_offer" class="coin-offer">
-                  <Icon icon="mdi:coin" />
-                  <span>{{ offer.coin_offer }} coins</span>
-                </div>
-                <div v-if="offer.item_offers && offer.item_offers.length > 0" class="item-offers">
-                  <Icon icon="mdi:package-variant" />
-                  <span class="items-label">Items offered:</span>
-                  <div class="offered-items">
-                    <div v-for="(itemOffer, index) in offer.item_offers" :key="index" class="offered-item">
-                      <ItemIcon 
-                        :item-id="itemOffer.item_id" 
-                        :item-name="getItemName(itemOffer.item_id)"
-                        size="small"
-                      />
-                      <span class="item-details">{{ itemOffer.quantity }}x {{ getItemName(itemOffer.item_id) }}</span>
-                    </div>
-                  </div>
-                </div>
-                <div v-if="offer.message" class="offer-message">
-                  <Icon icon="mdi:message-text" />
-                  <div class="message-content">
-                    <strong>Buyer's message:</strong>
-                    <p>{{ offer.message }}</p>
+              <!-- Offer details (collapsed by default) -->
+              <div class="offer-details-compact">
+                <div v-if="offer.item_offers && offer.item_offers.length > 0" class="offered-items-compact">
+                  <div v-for="(itemOffer, index) in offer.item_offers" :key="index" class="offered-item-compact">
+                    <ItemIcon 
+                      :item-id="itemOffer.item_id" 
+                      :item-name="getItemName(itemOffer.item_id)"
+                      size="small"
+                    />
+                    <span>{{ itemOffer.quantity }}x {{ getItemName(itemOffer.item_id) }}</span>
                   </div>
                 </div>
                 
-                <!-- Display quantity requested if specified -->
-                <div v-if="offer.quantity_requested" class="quantity-requested">
+                <div v-if="offer.message" class="offer-message-compact">
+                  <Icon icon="mdi:message-text" />
+                  <span>"{{ offer.message }}"</span>
+                </div>
+                
+                <div v-if="offer.quantity_requested" class="quantity-requested-compact">
                   <Icon icon="mdi:package-variant-closed" />
-                  <div class="quantity-content">
-                    <strong>Quantity Requested:</strong>
-                    <span class="quantity-value">{{ offer.quantity_requested }} of {{ selectedListingForOffers?.quantity }}</span>
-                  </div>
+                  <span>Wants {{ offer.quantity_requested }} of {{ selectedListingForOffers?.quantity }}</span>
                 </div>
               </div>
 
@@ -832,7 +894,7 @@
                 <p>Quantity: {{ selectedListing?.quantity === -1 ? 'Unlimited' : selectedListing?.quantity }}</p>
                 <p>
                   {{ selectedListing?.listing_type === 'buying' ? 'Offering Price:' : 'Asking Price:' }} 
-                  {{ selectedListing?.asking_price }} coins
+                  {{ formatAmount(selectedListing?.asking_price || 0) }} coins
                   {{ selectedListing?.accepts_partial_offers ? ' per item' : '' }}
                 </p>
                 <p v-if="selectedListing?.accepts_items">✓ Accepts item trades</p>
@@ -903,7 +965,7 @@
           </div>
 
           <div class="offer-value-summary" v-if="calculateOfferValue() > 0">
-            <strong>Total Offer Value: {{ calculateOfferValue() }} coins</strong>
+            <strong>Total Offer Value: {{ formatAmount(calculateOfferValue()) }} coins</strong>
           </div>
 
           <div class="modal-actions">
@@ -911,70 +973,6 @@
             <button @click="submitOffer" class="submit-btn" :disabled="!canSubmitOffer">
               Submit Offer
             </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Item Details Modal -->
-    <div v-if="showItemDetailModal" class="modal-overlay" @click="showItemDetailModal = false">
-      <div class="modal item-details-modal" @click.stop>
-        <div class="modal-header">
-          <h2>Item Details</h2>
-          <button @click="showItemDetailModal = false" class="close-btn">
-            <Icon icon="mdi:close" />
-          </button>
-        </div>
-        <div class="modal-body" v-if="selectedItemForDetails">
-          <div class="item-detail-content">
-            <div class="item-detail-header">
-              <ItemIcon 
-                :item-id="selectedItemForDetails" 
-                :item-name="getItemName(selectedItemForDetails)"
-                size="large"
-              />
-              <div class="item-detail-info">
-                <h3>{{ getItemName(selectedItemForDetails) }}</h3>
-                <p class="item-detail-description">{{ getItemDescription(selectedItemForDetails) }}</p>
-                <div class="item-stats">
-                  <div class="stat-item">
-                    <Icon icon="mdi:cash" />
-                    <span>Base Cost: {{ getItem(selectedItemForDetails)?.cost }} coins</span>
-                  </div>
-                  <div class="stat-item">
-                    <Icon icon="mdi:swap-horizontal" />
-                    <span>{{ getItem(selectedItemForDetails)?.isTradeable ? 'Tradeable' : 'Not Tradeable' }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div class="market-stats">
-              <h4>Market Statistics</h4>
-              <div class="market-stats-grid">
-                <div class="market-stat">
-                  <Icon icon="mdi:chart-line" />
-                  <div>
-                    <span class="stat-label">Active Listings</span>
-                    <span class="stat-value">{{ getMarketStats(selectedItemForDetails).activeListings }}</span>
-                  </div>
-                </div>
-                <div class="market-stat">
-                  <Icon icon="mdi:trending-up" />
-                  <div>
-                    <span class="stat-label">Avg. Price</span>
-                    <span class="stat-value">{{ getMarketStats(selectedItemForDetails).avgPrice }} coins</span>
-                  </div>
-                </div>
-                <div class="market-stat">
-                  <Icon icon="mdi:arrow-up-down" />
-                  <div>
-                    <span class="stat-label">Price Range</span>
-                    <span class="stat-value">{{ getMarketStats(selectedItemForDetails).priceRange }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -1048,7 +1046,7 @@
                   />
                   <div class="mini-listing-info">
                     <span class="mini-listing-name">{{ getItemName(listing.item_id) }}</span>
-                    <span class="mini-listing-price">{{ listing.asking_price }} coins</span>
+                    <span class="mini-listing-price">{{ formatAmount(listing.asking_price) }} coins</span>
                   </div>
                 </div>
               </div>
@@ -1069,7 +1067,7 @@
                   />
                   <div class="trade-info">
                     <span class="trade-item">{{ getItemName(trade.item_id) }} (x{{ trade.quantity }})</span>
-                    <span class="trade-price">{{ trade.asking_price }} coins</span>
+                    <span class="trade-price">{{ formatAmount(trade.asking_price) }} coins</span>
                     <span class="trade-date">{{ formatTradeDate(trade.sold_date) }}</span>
                   </div>
                 </div>
@@ -1146,46 +1144,23 @@ const editingListing = ref<MarketplaceListing | null>(null)
 const showOfferModal = ref(false)
 const selectedListing = ref<MarketplaceListing | null>(null)
 const searchQuery = ref('')
-const sortBy = ref('newest')
-const showOnlyTradeableItems = ref(false)
-const showOnlyOwnListings = ref(false)
 const listingTypeFilter = ref<'all' | 'selling' | 'buying'>('all')
-const priceFilter = ref({ min: null as number | null, max: null as number | null })
+
+// Sorting state
+const sortColumn = ref<string | null>(null)
+const sortDirection = ref<'asc' | 'desc'>('asc')
 
 // New UX features
-const showQuickFilters = ref(false)
-const showItemDetailModal = ref(false)
-const selectedItemForDetails = ref<number | null>(null)
 const showSellerProfileModal = ref(false)
 const selectedSellerProfile = ref<any | null>(null)
 const showOffersModal = ref(false)
 const selectedListingForOffers = ref<MarketplaceListing | null>(null)
+const showMarketStats = ref(false)
 const recentActions = ref<string[]>([]) // For feedback messages
 
 // Offers data
 const listingOffers = ref<{ [listingId: string]: any[] }>({})
 const partialAcceptQuantity = ref<{ [offerId: string]: number }>({})
-
-// Quick filter chips data
-const quickFilterChips = ref([
-  { key: 'selling', label: 'Selling Items', icon: 'mdi:tag', filter: { listingType: 'selling' } },
-  { key: 'buying', label: 'Buying Requests', icon: 'mdi:cash', filter: { listingType: 'buying' } },
-  { key: 'cheap', label: 'Under 20 coins', icon: 'mdi:currency-usd-off', filter: { priceMax: 20 } },
-  { key: 'moderate', label: '20-50 coins', icon: 'mdi:currency-usd', filter: { priceMin: 20, priceMax: 50 } },
-  { key: 'expensive', label: 'Over 50 coins', icon: 'mdi:diamond', filter: { priceMin: 50 } },
-  { key: 'tradeable', label: 'Accepts trades', icon: 'mdi:swap-horizontal', filter: { acceptsTrades: true } },
-  { key: 'fresh', label: 'Posted today', icon: 'mdi:new-box', filter: { isRecent: true } },
-  { key: 'popular', label: 'Has offers', icon: 'mdi:fire', filter: { hasOffers: true } }
-])
-
-// Sort options for the enhanced UI
-const sortOptions = [
-  { value: 'newest', label: 'Newest', icon: 'mdi:clock-outline' },
-  { value: 'oldest', label: 'Oldest', icon: 'mdi:clock' },
-  { value: 'price-low', label: 'Price ↑', icon: 'mdi:sort-numeric-ascending' },
-  { value: 'price-high', label: 'Price ↓', icon: 'mdi:sort-numeric-descending' },
-  { value: 'item-name', label: 'Name', icon: 'mdi:sort-alphabetical-ascending' }
-]
 
 // Form data
 const newListing = ref<NewListing>({
@@ -1213,20 +1188,11 @@ const tradeableItems = computed(() => {
 })
 
 const totalOffers = computed(() => {
-  return Object.values(listingOffers.value).reduce((total, offers) => total + offers.length, 0)
-})
-
-const hasActiveFilters = computed(() => {
-  return searchQuery.value !== '' ||
-         priceFilter.value.min !== null ||
-         priceFilter.value.max !== null ||
-         showOnlyTradeableItems.value ||
-         showOnlyOwnListings.value ||
-         listingTypeFilter.value !== 'all'
-})
-
-const activeQuickFiltersCount = computed(() => {
-  return quickFilterChips.value.filter(chip => isQuickFilterActive(chip)).length
+  return marketplace.listings.value.reduce((total, listing) => {
+    // Use the offer_count from the listing if available, otherwise fallback to 0
+    const offerCount = typeof listing.offer_count === 'number' ? listing.offer_count : 0
+    return total + offerCount
+  }, 0)
 })
 
 const canCreateListing = computed(() => {
@@ -1258,14 +1224,12 @@ const canSubmitOffer = computed(() => {
 const filteredListings = computed(() => {
   let filtered = [...marketplace.listings.value]
   
-  // Search filter
+  // Search filter - search by item name only
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
     filtered = filtered.filter(listing => {
-      const item = getItem(listing.item_id)
-      return item?.name.toLowerCase().includes(query) || 
-             item?.description.toLowerCase().includes(query) ||
-             listing.notes.toLowerCase().includes(query)
+      const itemName = getItemName(listing.item_id).toLowerCase()
+      return itemName.includes(query)
     })
   }
   
@@ -1274,43 +1238,35 @@ const filteredListings = computed(() => {
     filtered = filtered.filter(listing => listing.listing_type === listingTypeFilter.value)
   }
   
-  // Price filter
-  if (priceFilter.value.min !== null) {
-    filtered = filtered.filter(listing => listing.asking_price >= priceFilter.value.min!)
+  // Apply column sorting
+  if (sortColumn.value) {
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any
+      
+      switch (sortColumn.value) {
+        case 'quantity':
+          aValue = a.quantity === -1 ? Infinity : a.quantity
+          bValue = b.quantity === -1 ? Infinity : b.quantity
+          break
+        case 'price':
+          aValue = a.asking_price
+          bValue = b.asking_price
+          break
+        case 'offers':
+          aValue = getOfferCount(a.id)
+          bValue = getOfferCount(b.id)
+          break
+        default:
+          return 0
+      }
+      
+      const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0
+      return sortDirection.value === 'asc' ? comparison : -comparison
+    })
+  } else {
+    // Default sort by newest
+    filtered.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   }
-  if (priceFilter.value.max !== null) {
-    filtered = filtered.filter(listing => listing.asking_price <= priceFilter.value.max!)
-  }
-  
-  // Tradeable items filter
-  if (showOnlyTradeableItems.value) {
-    filtered = filtered.filter(listing => listing.accepts_items)
-  }
-  
-  // Own listings filter
-  if (showOnlyOwnListings.value) {
-    filtered = filtered.filter(listing => marketplace.isOwnListing(listing))
-  }
-  
-  // Sort
-  filtered.sort((a, b) => {
-    switch (sortBy.value) {
-      case 'newest':
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      case 'oldest':
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      case 'price-low':
-        return a.asking_price - b.asking_price
-      case 'price-high':
-        return b.asking_price - a.asking_price
-      case 'item-name':
-        const itemA = getItem(a.item_id)
-        const itemB = getItem(b.item_id)
-        return (itemA?.name || '').localeCompare(itemB?.name || '')
-      default:
-        return 0
-    }
-  })
   
   return filtered
 })
@@ -1318,6 +1274,18 @@ const filteredListings = computed(() => {
 // Helper function to check if a listing has infinite quantity
 const isInfiniteListing = (listing: MarketplaceListing): boolean => {
   return listing.quantity === -1
+}
+
+// Sorting functions
+const sortByColumn = (column: string) => {
+  if (sortColumn.value === column) {
+    // Toggle direction if clicking the same column
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    // Set new column and default to ascending
+    sortColumn.value = column
+    sortDirection.value = 'asc'
+  }
 }
 
 // Methods
@@ -1338,6 +1306,19 @@ const getItemName = (itemId: number): string => {
 
 const getItemDescription = (itemId: number): string => {
   return getItem(itemId)?.description || 'No description available'
+}
+
+// Utility function to format numbers with k/m suffixes
+const formatAmount = (amount: number): string => {
+  if (amount >= 1000000) {
+    const formatted = (amount / 1000000).toFixed(2).replace(/\.?0+$/, '')
+    return `${formatted}m`
+  }
+  if (amount >= 1000) {
+    const formatted = (amount / 1000).toFixed(1).replace(/\.?0+$/, '')
+    return `${formatted}k`
+  }
+  return amount.toString()
 }
 
 const updateSelectedItem = (item: Item | null) => {
@@ -1673,97 +1654,13 @@ const isRecentListing = (listing: MarketplaceListing): boolean => {
   return hoursDiff <= 24 // Consider listings from last 24 hours as "recent"
 }
 
-const toggleQuickFilters = () => {
-  showQuickFilters.value = !showQuickFilters.value
-}
-
-const applyQuickFilter = (chip: any) => {
-  const filter = chip.filter
-  
-  // Check if this filter is already active - if so, toggle it off
-  if (isQuickFilterActive(chip)) {
-    // Remove the filter by resetting to defaults
-    if (filter.listingType) listingTypeFilter.value = 'all'
-    if (filter.priceMin !== undefined || filter.priceMax !== undefined) {
-      priceFilter.value.min = null
-      priceFilter.value.max = null
-    }
-    if (filter.acceptsTrades) showOnlyTradeableItems.value = false
-    if (filter.isRecent) {
-      sortBy.value = 'newest' // Keep newest, but this doesn't really "remove" the filter
-    }
-    
-    showFeedback(`Removed filter: ${chip.label}`, 'info')
-  } else {
-    // Apply the filter
-    if (filter.listingType) listingTypeFilter.value = filter.listingType
-    if (filter.priceMin !== undefined) priceFilter.value.min = filter.priceMin
-    if (filter.priceMax !== undefined) priceFilter.value.max = filter.priceMax
-    if (filter.acceptsTrades) showOnlyTradeableItems.value = true
-    if (filter.isRecent) {
-      // Filter for listings posted in last 24 hours
-      sortBy.value = 'newest'
-    }
-    if (filter.hasOffers) {
-      // This would require additional filtering logic
-      showFeedback('Showing popular listings with offers', 'info')
-    }
-    
-    showFeedback(`Applied filter: ${chip.label}`, 'info')
-  }
-  
-  // Don't auto-close the quick filters bar so users can apply multiple filters
-  // showQuickFilters.value = false
-}
-
-const isQuickFilterActive = (chip: any): boolean => {
-  const filter = chip.filter
-  
-  // Check listing type filter
-  if (filter.listingType && listingTypeFilter.value !== filter.listingType) {
-    return false
-  }
-  
-  // Check price range filters
-  if (filter.priceMin !== undefined || filter.priceMax !== undefined) {
-    const minMatches = filter.priceMin === undefined || priceFilter.value.min === filter.priceMin
-    const maxMatches = filter.priceMax === undefined || priceFilter.value.max === filter.priceMax
-    if (!minMatches || !maxMatches) return false
-  }
-  
-  // Check accepts trades filter
-  if (filter.acceptsTrades && !showOnlyTradeableItems.value) {
-    return false
-  }
-  
-  // Check recent filter (posted today)
-  if (filter.isRecent && sortBy.value !== 'newest') {
-    return false
-  }
-  
-  // For filters that match current state, return true
-  if (filter.listingType && listingTypeFilter.value === filter.listingType) return true
-  if (filter.acceptsTrades && showOnlyTradeableItems.value) return true
-  if (filter.isRecent && sortBy.value === 'newest') return true
-  
-  // For price filters, check if they match exactly
-  if (filter.priceMin !== undefined || filter.priceMax !== undefined) {
-    const minMatches = filter.priceMin === undefined || priceFilter.value.min === filter.priceMin
-    const maxMatches = filter.priceMax === undefined || priceFilter.value.max === filter.priceMax
-    return minMatches && maxMatches
-  }
-  
-  // For "has offers" filter, we can't easily determine this without additional data
-  // So we'll return false for now (this filter would need backend support)
-  if (filter.hasOffers) return false
-  
-  return false
-}
-
-// Item details modal
+// Show item details by finding a listing for this item and opening offers modal
 const showItemDetails = (itemId: number) => {
-  selectedItemForDetails.value = itemId
-  showItemDetailModal.value = true
+  // Find any listing for this item to show detailed information
+  const listing = marketplace.listings.value.find(l => l.item_id === itemId)
+  if (listing) {
+    viewOffers(listing)
+  }
 }
 
 // Seller profile modal
@@ -1817,13 +1714,36 @@ const getFeedbackIcon = (action: string): string => {
 
 // Market statistics for item details
 const getMarketStats = (itemId: number) => {
-  const itemListings = marketplace.listings.value.filter(l => l.item_id === itemId)
-  const prices = itemListings.map(l => l.asking_price)
+  // Only consider selling listings for market statistics
+  const itemListings = marketplace.listings.value.filter(l => l.item_id === itemId && l.listing_type === 'selling')
+  
+  // Calculate average price per item and collect per-item prices for range
+  let totalPerItemPrices = 0
+  let listingCount = 0
+  const perItemPrices: number[] = []
+  
+  itemListings.forEach(listing => {
+    let pricePerItem = 0
+    
+    if (listing.quantity === -1 || listing.accepts_partial_offers) {
+      // For infinite listings or partial offers, asking_price is already per item
+      pricePerItem = listing.asking_price
+    } else {
+      // For non-partial listings, asking_price is total price, so calculate per item
+      pricePerItem = listing.asking_price / listing.quantity
+    }
+    
+    totalPerItemPrices += pricePerItem
+    perItemPrices.push(pricePerItem)
+    listingCount++
+  })
+  
+  const avgPrice = listingCount > 0 ? Math.round(totalPerItemPrices / listingCount) : 0
   
   return {
     activeListings: itemListings.length,
-    avgPrice: prices.length ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0,
-    priceRange: prices.length ? `${Math.min(...prices)} - ${Math.max(...prices)}` : 'N/A'
+    avgPrice: avgPrice,
+    priceRange: perItemPrices.length ? `${formatAmount(Math.min(...perItemPrices))} - ${formatAmount(Math.max(...perItemPrices))}` : 'N/A'
   }
 }
 
@@ -1843,17 +1763,6 @@ const formatTradeDate = (dateString: string): string => {
   if (diffDays < 7) return `${diffDays} days ago`
   if (diffDays < 30) return `${Math.ceil(diffDays / 7)} weeks ago`
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-}
-
-const clearFilters = () => {
-  searchQuery.value = ''
-  priceFilter.value.min = null
-  priceFilter.value.max = null
-  showOnlyTradeableItems.value = false
-  showOnlyOwnListings.value = false
-  listingTypeFilter.value = 'all'
-  sortBy.value = 'newest'
-  showFeedback('All filters cleared', 'info')
 }
 
 // Initialize

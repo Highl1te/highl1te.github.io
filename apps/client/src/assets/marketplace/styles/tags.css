@@ -124,8 +124,7 @@
   animation: gentle-bounce 2s ease-in-out infinite;
 }
 
-/* Remove old badge styles in favor of tag system */
-.listing-type-badge,
+/* Remove old badge styles in favor of tag system - but keep listing-type-badge for table view */
 .listing-badge,
 .popularity-badge {
   display: none;
