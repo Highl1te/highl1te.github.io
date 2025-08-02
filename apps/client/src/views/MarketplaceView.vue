@@ -1654,15 +1654,6 @@ const isRecentListing = (listing: MarketplaceListing): boolean => {
   return hoursDiff <= 24 // Consider listings from last 24 hours as "recent"
 }
 
-// Show item details by finding a listing for this item and opening offers modal
-const showItemDetails = (itemId: number) => {
-  // Find any listing for this item to show detailed information
-  const listing = marketplace.listings.value.find(l => l.item_id === itemId)
-  if (listing) {
-    viewOffers(listing)
-  }
-}
-
 // Seller profile modal
 const showSellerProfile = async (sellerId: string) => {
   try {
