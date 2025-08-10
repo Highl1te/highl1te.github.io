@@ -1,6 +1,5 @@
 import express, { Request, Response, Router } from 'express';
 import axios, { AxiosRequestConfig } from 'axios';
-import { createHash } from 'crypto';
 
 // Simple in-memory cache
 type CacheEntry<T = any> = { data: T; expiresAt: number; etag?: string };
