@@ -1,5 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import axios, { AxiosRequestConfig } from 'axios';
+import { createHash } from 'crypto';
 
 // Simple in-memory cache
 type CacheEntry<T = any> = { data: T; expiresAt: number; etag?: string };
@@ -72,33 +73,29 @@ async function fetchPluginAsset(owner: string, repo: string, sha: string): Promi
     return Buffer.from(cached.data as any);
   }
 
-  const headers: Record<string, string> = {
-    'Accept': 'application/vnd.github.raw',
-    'User-Agent': 'highlite.dev-server'
+  const apiHeaders: Record<string, string> = {
+    'Accept': 'application/vnd.github+json',
+    'User-Agent': 'highlite.dev-server',
   };
-  if (process.env.GITHUB_TOKEN) headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
 
-  // List latest release assets for the plugin repo
-  const releaseRes = await axios.get(`${GITHUB_API_BASE}/repos/${owner}/${repo}/releases/latest`, { headers } as AxiosRequestConfig);
-  const assets: any[] = releaseRes.data.assets || [];
-  if (!assets.length) throw new Error('No assets found in latest release');
-
-  // First try to match via provided digest metadata (if present)
-  const normalizedWanted = sha.toLowerCase().replace(/^sha256:/, '');
-  const digestMatched = assets.find(a => {
-    const d = (a.digest || '') as string;
-    if (!d) return false;
-    const val = d.toLowerCase().replace(/^sha256:/, '');
-    return val === normalizedWanted;
-  });
-  if (digestMatched?.browser_download_url) {
-    const assetRes = await axios.get(digestMatched.browser_download_url, { headers: { ...headers, Accept: 'application/octet-stream' }, responseType: 'arraybuffer' } as AxiosRequestConfig);
-    const buf = Buffer.from(assetRes.data);
-    cache.set(cacheKey, { data: buf, expiresAt: ASSET_TTL_MS });
-    return buf;
+  if (process.env.GITHUB_TOKEN) {
+    apiHeaders['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
   }
 
-  throw new Error('Asset with matching sha not found');
+    const releasesUrl = `${GITHUB_API_BASE}/repos/${owner}/${repo}/releases`;
+    const repoReleases = await axios.get(releasesUrl, { headers: apiHeaders } as AxiosRequestConfig);
+    for (const release of repoReleases.data) {
+      for (const asset of release.assets || []) {
+        if (asset.digest === sha) {
+            const assetRes = await axios.get(asset.browser_download_url, { headers: apiHeaders, responseType: 'arraybuffer' } as AxiosRequestConfig);
+            const buf = Buffer.from(assetRes.data);
+            cache.set(cacheKey, { data: buf, expiresAt: ASSET_TTL_MS });
+            return buf;
+        }
+      }
+    }
+
+    throw new Error('Asset with matching sha not found across all releases');
 }
 
 const router: Router = express.Router();
