@@ -113,9 +113,10 @@ router.get('/manifest.json', async (_req: Request, res: Response): Promise<void>
   }
 });
 
-// GET /api/plugins/:owner/:repo -> fetch plugin asset identified by manifest entry
+// GET /api/plugins/:owner/:name -> fetch plugin asset identified by display_name (fallback to repository_name)
 router.get('/:owner/:repo', async (req: Request, res: Response): Promise<void> => {
-  const { owner, repo } = req.params;
+  const owner = req.params.owner;
+  const name = req.params.repo; // path keeps :repo for back-compat; treat it as display_name or repository_name
   try {
     const result = await fetchLatestReleaseManifest();
     if (!result?.content) {
@@ -126,13 +127,14 @@ router.get('/:owner/:repo', async (req: Request, res: Response): Promise<void> =
     // Expect manifest to be an array or object containing entries with repository_owner, repository_name, asset_sha
     const manifest = result.content;
     const entries: any[] = Array.isArray(manifest) ? manifest : (manifest.plugins || manifest.entries || []);
-    const entry = entries.find((e: any) => e.repository_owner === owner && e.repository_name === repo);
+    const entry = entries.find((e: any) => e.repository_owner === owner && (e.display_name === name || e.repository_name === name));
     if (!entry || !entry.asset_sha) {
       res.status(404).json({ error: 'Plugin not found in manifest' });
       return;
     }
 
-    const buf = await fetchPluginAsset(owner, repo, entry.asset_sha);
+    // Use the actual repository_name from the manifest to fetch the asset (supports monorepos)
+    const buf = await fetchPluginAsset(entry.repository_owner, entry.repository_name, entry.asset_sha);
     // Serve as application/octet-stream
     res.setHeader('Content-Type', 'application/octet-stream');
     res.setHeader('Cache-Control', 'public, max-age=60');
