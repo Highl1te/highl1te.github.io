@@ -1,5 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import axios, { AxiosRequestConfig } from 'axios';
+import { createHash } from 'crypto';
 
 // Simple in-memory cache
 type CacheEntry<T = any> = { data: T; expiresAt: number; etag?: string };
@@ -9,7 +10,8 @@ const cache = new Map<string, CacheEntry>();
 const GITHUB_REPO_OWNER = 'Highl1te';
 const GITHUB_REPO_NAME = 'Plugin-Hub';
 const GITHUB_API_BASE = 'https://api.github.com';
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes for manifest and assets
+const MANIFEST_TTL_MS = 5 * 60 * 1000; // 5 minutes for manifest freshness
+const ASSET_TTL_MS = Number.POSITIVE_INFINITY; // cache plugin assets indefinitely (server-side)
 
 // Helper to build cache keys
 const key = (...parts: string[]) => parts.join('::');
@@ -47,12 +49,12 @@ async function fetchLatestReleaseManifest(): Promise<{ content: any; raw: string
     const raw = typeof manifestRes.data === 'string' ? manifestRes.data : JSON.stringify(manifestRes.data);
     const content = JSON.parse(raw);
 
-    cache.set(cacheKey, { data: content, expiresAt: now + CACHE_TTL_MS, etag });
+    cache.set(cacheKey, { data: content, expiresAt: now + MANIFEST_TTL_MS, etag });
     return { content, raw, etag };
   } catch (err: any) {
     if (err?.response?.status === 304 && cached) {
       // Not modified - extend TTL
-      cache.set(cacheKey, { ...cached, expiresAt: now + CACHE_TTL_MS });
+      cache.set(cacheKey, { ...cached, expiresAt: now + MANIFEST_TTL_MS });
       return { content: cached.data, raw: JSON.stringify(cached.data), etag: cached.etag };
     }
     // If rate limited or other error but we have cached, serve cached
@@ -77,18 +79,27 @@ async function fetchPluginAsset(owner: string, repo: string, sha: string): Promi
   };
   if (process.env.GITHUB_TOKEN) headers['Authorization'] = `Bearer ${process.env.GITHUB_TOKEN}`;
 
-  // Attempt: list latest release assets for the plugin repo and find asset whose digest/sha matches if provided in response
+  // List latest release assets for the plugin repo
   const releaseRes = await axios.get(`${GITHUB_API_BASE}/repos/${owner}/${repo}/releases/latest`, { headers } as AxiosRequestConfig);
   const assets: any[] = releaseRes.data.assets || [];
-  // Find by sha in name or digest
-  let match = assets.find(a => (a.name && a.name.includes(sha)) || (a.label && a.label.includes(sha)) || (a.digest && String(a.digest).includes(sha)));
-  if (!match && assets.length === 1) match = assets[0]; // heuristic fallback
-  if (!match?.browser_download_url) throw new Error('Asset not found');
+  if (!assets.length) throw new Error('No assets found in latest release');
 
-  const assetRes = await axios.get(match.browser_download_url, { headers: { ...headers, Accept: 'application/octet-stream' }, responseType: 'arraybuffer' } as AxiosRequestConfig);
-  const buf = Buffer.from(assetRes.data);
-  cache.set(cacheKey, { data: buf, expiresAt: now + CACHE_TTL_MS });
-  return buf;
+  // First try to match via provided digest metadata (if present)
+  const normalizedWanted = sha.toLowerCase().replace(/^sha256:/, '');
+  const digestMatched = assets.find(a => {
+    const d = (a.digest || '') as string;
+    if (!d) return false;
+    const val = d.toLowerCase().replace(/^sha256:/, '');
+    return val === normalizedWanted;
+  });
+  if (digestMatched?.browser_download_url) {
+    const assetRes = await axios.get(digestMatched.browser_download_url, { headers: { ...headers, Accept: 'application/octet-stream' }, responseType: 'arraybuffer' } as AxiosRequestConfig);
+    const buf = Buffer.from(assetRes.data);
+    cache.set(cacheKey, { data: buf, expiresAt: ASSET_TTL_MS });
+    return buf;
+  }
+
+  throw new Error('Asset with matching sha not found');
 }
 
 const router: Router = express.Router();
