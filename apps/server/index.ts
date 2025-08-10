@@ -27,6 +27,7 @@ configurePassport();
 import authRoutes from './routes/auth.js';
 import marketplaceRoutes from './routes/marketplaceRoute.js';
 import adminRoutes from './routes/admin.js';
+import pluginsRoutes from './routes/plugins.js';
 
 // Middleware
 // Security headers
@@ -105,6 +106,7 @@ app.use(passport.session());
 app.use('/api/auth', authRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/plugins', pluginsRoutes);
 
 // Health check endpoint
 app.get('/health', (_req, res) => {
